@@ -6,9 +6,20 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-  darkMode: "class",
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        surface: "var(--surface)",
+        "surface-muted": "var(--surface-muted)",
+        muted: "var(--muted)",
+        accent: "var(--accent)",
+      },
+      borderColor: {
+        subtle: "var(--border-subtle)",
+      },
+    },
   },
   plugins: [],
 };

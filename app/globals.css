@@ -3,11 +3,82 @@
 @tailwind utilities;
 
 :root {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
+  --background: #f5f5f0;
+  --foreground: #2c2c2c;
+  --surface: #ffffff;
+  --surface-muted: #fafafa;
+  --border-subtle: #e5e5e5;
+  --muted: #6b6b6b;
+  --accent: #4a4a4a;
+  /* Font variables will be set by Geist fonts via next/font */
 }
 
-body {
-  @apply bg-slate-950 text-slate-100;
+@layer base {
+  body {
+    font-family: var(--font-geist-sans);
+    background-color: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  code,
+  pre {
+    font-family: var(--font-geist-mono);
+  }
+
+  /* Tailwind utility classes mapped to CSS variables */
+  .bg-background {
+    background-color: var(--background);
+  }
+
+  .bg-surface {
+    background-color: var(--surface);
+  }
+
+  .bg-surface-muted {
+    background-color: var(--surface-muted);
+  }
+
+  .border-subtle {
+    border-color: var(--border-subtle);
+  }
+
+  .text-foreground {
+    color: var(--foreground);
+  }
+
+  .text-muted {
+    color: var(--muted);
+  }
+
+  .text-accent {
+    color: var(--accent);
+  }
+
+  .bg-accent {
+    background-color: var(--accent);
+  }
+}
+
+/* Subtle pulse animation for note-on effect */
+@keyframes note-on-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-note-on {
+  animation: note-on-pulse 0.3s ease-out;
 }
 
