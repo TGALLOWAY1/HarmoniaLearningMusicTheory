@@ -86,6 +86,7 @@ export async function GET() {
           nextTemplate.optionD,
         ],
         correctIndex: nextTemplate.correctIndex,
+        meta: nextTemplate.meta,
       },
       state: {
         id: nextState.id,
