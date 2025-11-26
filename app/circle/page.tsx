@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   getNeighborsForKey,
   getRelativeMinor,
@@ -13,6 +13,18 @@ import {
 } from "@/lib/theory";
 import { CircleOfFifths } from "@/components/circle/CircleOfFifths";
 import { PianoRoll } from "@/components/piano-roll/PianoRoll";
+
+type KeySummaryDto = {
+  id: string;
+  mastery: number;
+  avgRecallMs: number | null;
+  lastReviewedAt: string | null;
+  dueCount: number;
+};
+
+type CircleSummaryResponse = {
+  keys: KeySummaryDto[];
+};
 
 /**
  * Format a triad as a chord symbol string
@@ -37,6 +49,63 @@ function formatChordSymbol(root: PitchClass, quality: TriadQuality): string {
 
 export default function CirclePage() {
   const [selectedRoot, setSelectedRoot] = useState<PitchClass>("C");
+  const [circleSummary, setCircleSummary] = useState<KeySummaryDto[]>([]);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  // Fetch circle summary on mount
+  useEffect(() => {
+    async function fetchSummary() {
+      try {
+        setSummaryLoading(true);
+        setSummaryError(null);
+        const response = await fetch("/api/circle/summary");
+        if (!response.ok) {
+          throw new Error("Failed to fetch circle summary");
+        }
+        const data: CircleSummaryResponse = await response.json();
+        setCircleSummary(data.keys);
+      } catch (error) {
+        console.error("Error fetching circle summary:", error);
+        setSummaryError("Couldn't load mastery data");
+      } finally {
+        setSummaryLoading(false);
+      }
+    }
+    fetchSummary();
+  }, []);
+
+  // Create masteryByRoot map for CircleOfFifths
+  const masteryByRoot = useMemo(() => {
+    const map: Record<PitchClass, number> = {} as Record<PitchClass, number>;
+    for (const summary of circleSummary) {
+      // Extract root from id format: "<root>_major"
+      const root = summary.id.split("_")[0] as PitchClass;
+      map[root] = summary.mastery;
+    }
+    return map;
+  }, [circleSummary]);
+
+  // Create statsByRoot map for tooltip (mastery + dueCount)
+  const statsByRoot = useMemo(() => {
+    const map: Record<PitchClass, { mastery: number; dueCount: number }> =
+      {} as Record<PitchClass, { mastery: number; dueCount: number }>;
+    for (const summary of circleSummary) {
+      // Extract root from id format: "<root>_major"
+      const root = summary.id.split("_")[0] as PitchClass;
+      map[root] = {
+        mastery: summary.mastery,
+        dueCount: summary.dueCount,
+      };
+    }
+    return map;
+  }, [circleSummary]);
+
+  // Find summary for selected key
+  const selectedKeySummary = useMemo(() => {
+    const keyId = `${selectedRoot}_major`;
+    return circleSummary.find((s) => s.id === keyId) ?? null;
+  }, [circleSummary, selectedRoot]);
 
   // Derived data
   const neighbors = useMemo(
@@ -96,6 +165,8 @@ export default function CirclePage() {
             selectedRoot={selectedRoot}
             onSelectRoot={setSelectedRoot}
             showRelativeMinors
+            masteryByRoot={masteryByRoot}
+            statsByRoot={statsByRoot}
           />
 
           <div className="mt-4 space-y-3 rounded-2xl border border-subtle bg-surface p-4 text-sm">
@@ -116,6 +187,53 @@ export default function CirclePage() {
               </span>
             </p>
             {/* TODO: Add key signature text (sharps/flats count) - A5.3 */}
+          </div>
+
+          {/* Mastery stats card */}
+          <div className="mt-4 rounded-2xl border border-subtle bg-surface p-4 text-sm">
+            <h2 className="text-sm font-medium text-foreground">Mastery</h2>
+            {summaryLoading ? (
+              <p className="mt-2 text-xs text-muted">Loading mastery data...</p>
+            ) : summaryError ? (
+              <p className="mt-2 text-xs text-muted">{summaryError}</p>
+            ) : selectedKeySummary ? (
+              <div className="mt-3 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted">Mastery:</span>
+                  <span className="font-medium text-foreground">
+                    {(selectedKeySummary.mastery * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted">Avg recall:</span>
+                  <span className="font-medium text-foreground">
+                    {selectedKeySummary.avgRecallMs !== null
+                      ? `${selectedKeySummary.avgRecallMs} ms`
+                      : "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted">Last reviewed:</span>
+                  <span className="font-medium text-foreground">
+                    {selectedKeySummary.lastReviewedAt
+                      ? new Date(
+                          selectedKeySummary.lastReviewedAt
+                        ).toLocaleDateString()
+                      : "Not reviewed yet"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted">Due cards:</span>
+                  <span className="font-medium text-foreground">
+                    {selectedKeySummary.dueCount}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-2 text-xs text-muted">
+                No mastery data available for this key
+              </p>
+            )}
           </div>
 
           <div className="mt-4 rounded-2xl border border-subtle bg-surface p-4 text-sm">
