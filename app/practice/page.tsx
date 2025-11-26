@@ -8,6 +8,8 @@ type LoadedCard = {
   question: string;
   options: string[];
   correctIndex: number;
+  kind?: string;
+  meta?: any;
 };
 
 export default function PracticePage() {
@@ -35,6 +37,8 @@ export default function PracticePage() {
         question: data.card.question,
         options: data.card.options,
         correctIndex: data.card.correctIndex,
+        kind: data.card.kind,
+        meta: data.card.meta,
       });
     } catch (err: any) {
       setError(err.message ?? "Unknown error");
@@ -136,6 +140,8 @@ export default function PracticePage() {
               onSelect={handleSelectOption}
               isSubmitting={submitting}
               showResult={correctIndex !== null}
+              cardKind={card.kind}
+              cardMeta={card.meta}
             />
 
             <div className="mt-4 flex flex-col gap-3">

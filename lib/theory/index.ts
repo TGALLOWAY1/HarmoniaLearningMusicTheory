@@ -33,3 +33,6 @@ export * from "./chord";
 // Export mapping functions
 export * from "./mapping";
 
+// Export circle of fifths functions
+export * from "./circle";
+
