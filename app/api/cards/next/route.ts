@@ -28,15 +28,40 @@ export async function GET() {
     }
 
     // 3) Re-fetch states (or update the map) since new ones may have been created
+    // Order by dueAt ascending to prioritize earliest due dates
     const allStates = await prisma.cardState.findMany({
       where: { cardId: { in: templateIds } },
-      orderBy: [
-        { dueAt: "asc" },
-        { id: "asc" },
-      ],
+      orderBy: [{ dueAt: "asc" }],
     });
 
-    const nextState = allStates[0];
+    if (allStates.length === 0) {
+      return NextResponse.json({ error: "No card state found" }, { status: 500 });
+    }
+
+    // 4) Partition cards: due cards (dueAt <= now) vs future cards
+    const now = new Date();
+    const dueCards = allStates.filter((s) => s.dueAt <= now);
+
+    let nextState: (typeof allStates)[0];
+
+    if (dueCards.length > 0) {
+      // If there are due cards, randomly select one to improve distribution
+      const randomIndex = Math.floor(Math.random() * dueCards.length);
+      nextState = dueCards[randomIndex];
+    } else {
+      // No due cards, find earliest future due date
+      const firstDue = allStates[0].dueAt;
+      const firstDueTime = firstDue.getTime();
+
+      // Find all cards with the same earliest due date
+      const futureWithSameDue = allStates.filter(
+        (s) => s.dueAt.getTime() === firstDueTime
+      );
+
+      // Randomly select among cards with the same earliest due date
+      const randomIndex = Math.floor(Math.random() * futureWithSameDue.length);
+      nextState = futureWithSameDue[randomIndex];
+    }
 
     if (!nextState) {
       return NextResponse.json({ error: "No card state found" }, { status: 500 });
@@ -60,6 +85,7 @@ export async function GET() {
           nextTemplate.optionC,
           nextTemplate.optionD,
         ],
+        correctIndex: nextTemplate.correctIndex,
       },
       state: {
         id: nextState.id,

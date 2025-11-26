@@ -37,11 +37,13 @@ model CardState {
   attemptsCount Int      @default(0)
   correctCount  Int      @default(0)
   lastAnswerAt  DateTime?
-  lastResult    Boolean?
+  lastResult    String?  // e.g. "Again" | "Hard" | "Good" | "Easy"
 
   // SRS fields (used next milestone, but define them now)
   easeFactor    Float    @default(2.5)
   intervalDays  Int      @default(0)
+  repetitions   Int      @default(0)
+  lapses        Int      @default(0)
   dueAt         DateTime @default(now())
 
   createdAt     DateTime @default(now())
