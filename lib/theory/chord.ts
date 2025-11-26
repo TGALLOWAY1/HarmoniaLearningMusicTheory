@@ -13,6 +13,8 @@ export type TriadQuality = "maj" | "min" | "dim" | "aug";
 
 export type SeventhQuality = "maj7" | "min7" | "dom7" | "half-dim7" | "dim7";
 
+export type ChordQuality = TriadQuality | "maj7" | "min7" | "dom7";
+
 export type Triad = {
   root: PitchClass;
   quality: TriadQuality;
@@ -72,6 +74,21 @@ const PITCH_CLASS_ORDER: PitchClass[] = [
   "A#",
   "B",
 ];
+
+/**
+ * Get a pitch class that is a given number of semitones above the root
+ * @param root - Starting pitch class
+ * @param semitones - Number of semitones to add (0-11)
+ * @returns Pitch class that is semitones above root
+ */
+function addSemitones(root: PitchClass, semitones: number): PitchClass {
+  const rootIndex = PITCH_CLASS_ORDER.indexOf(root);
+  if (rootIndex === -1) {
+    throw new Error(`Invalid pitch class: ${root}`);
+  }
+  const targetIndex = (rootIndex + semitones) % 12;
+  return PITCH_CLASS_ORDER[targetIndex];
+}
 
 /**
  * Calculate the semitone interval between two pitch classes
@@ -304,5 +321,130 @@ export function getDiatonicChords(
     triads,
     sevenths,
   };
+}
+
+/**
+ * Build a triad directly from root and quality
+ * @param root - Root pitch class
+ * @param quality - Triad quality
+ * @returns Triad with root, quality, and pitch classes
+ */
+export function buildTriadFromRoot(
+  root: PitchClass,
+  quality: TriadQuality
+): Triad {
+  let third: PitchClass;
+  let fifth: PitchClass;
+
+  switch (quality) {
+    case "maj":
+      // Major: M3 (4 semitones) + m3 (3 semitones) = perfect 5th (7 semitones)
+      third = addSemitones(root, 4);
+      fifth = addSemitones(root, 7);
+      break;
+    case "min":
+      // Minor: m3 (3 semitones) + M3 (4 semitones) = perfect 5th (7 semitones)
+      third = addSemitones(root, 3);
+      fifth = addSemitones(root, 7);
+      break;
+    case "dim":
+      // Diminished: m3 (3 semitones) + m3 (3 semitones) = diminished 5th (6 semitones)
+      third = addSemitones(root, 3);
+      fifth = addSemitones(root, 6);
+      break;
+    case "aug":
+      // Augmented: M3 (4 semitones) + M3 (4 semitones) = augmented 5th (8 semitones)
+      third = addSemitones(root, 4);
+      fifth = addSemitones(root, 8);
+      break;
+    default:
+      throw new Error(`Unsupported triad quality: ${quality}`);
+  }
+
+  return {
+    root,
+    quality,
+    pitchClasses: [root, third, fifth],
+  };
+}
+
+/**
+ * Build a seventh chord directly from root and quality
+ * @param root - Root pitch class
+ * @param quality - Seventh chord quality
+ * @returns SeventhChord with root, quality, and pitch classes
+ */
+export function buildSeventhFromRoot(
+  root: PitchClass,
+  quality: "maj7" | "min7" | "dom7"
+): SeventhChord {
+  // First build the triad
+  let triadQuality: TriadQuality;
+  let seventhSemitones: number;
+
+  switch (quality) {
+    case "maj7":
+      // Major triad + major 7th (11 semitones)
+      triadQuality = "maj";
+      seventhSemitones = 11;
+      break;
+    case "min7":
+      // Minor triad + minor 7th (10 semitones)
+      triadQuality = "min";
+      seventhSemitones = 10;
+      break;
+    case "dom7":
+      // Major triad + minor 7th (10 semitones)
+      triadQuality = "maj";
+      seventhSemitones = 10;
+      break;
+    default:
+      throw new Error(`Unsupported seventh quality: ${quality}`);
+  }
+
+  const triad = buildTriadFromRoot(root, triadQuality);
+  const seventh = addSemitones(root, seventhSemitones);
+
+  return {
+    root,
+    quality,
+    pitchClasses: [...triad.pitchClasses, seventh],
+  };
+}
+
+/**
+ * Format a chord symbol from root and quality
+ * @param root - Root pitch class
+ * @param quality - Chord quality
+ * @returns Formatted chord symbol string
+ * @example formatChordSymbol("C", "maj") -> "C"
+ * @example formatChordSymbol("C", "min") -> "Cm"
+ * @example formatChordSymbol("C", "maj7") -> "Cmaj7"
+ * @example formatChordSymbol("C", "dom7") -> "C7"
+ * @example formatChordSymbol("C", "dim") -> "C°"
+ * @example formatChordSymbol("C", "aug") -> "C+"
+ */
+export function formatChordSymbol(
+  root: PitchClass,
+  quality: ChordQuality
+): string {
+  switch (quality) {
+    case "maj":
+      return root; // No suffix for major
+    case "min":
+      return `${root}m`;
+    case "maj7":
+      return `${root}maj7`;
+    case "min7":
+      return `${root}m7`;
+    case "dom7":
+      return `${root}7`;
+    case "dim":
+      return `${root}°`;
+    case "aug":
+      return `${root}+`;
+    default:
+      throw new Error(`Unsupported chord quality: ${quality}`);
+  }
 }
 

@@ -26,6 +26,9 @@ const PITCH_CLASS_ORDER: PitchClass[] = [
 // Scale intervals in semitones
 const MAJOR_INTERVALS = [2, 2, 1, 2, 2, 2, 1]; // W-W-H-W-W-W-H
 const NATURAL_MINOR_INTERVALS = [2, 1, 2, 2, 1, 2, 2]; // W-H-W-W-H-W-W
+const DORIAN_INTERVALS = [2, 1, 2, 2, 2, 1, 2]; // W-H-W-W-W-H-W
+const MIXOLYDIAN_INTERVALS = [2, 2, 1, 2, 2, 1, 2]; // W-W-H-W-W-H-W
+const PHRYGIAN_INTERVALS = [1, 2, 2, 2, 1, 2, 2]; // H-W-W-W-H-W-W
 
 /**
  * Rotate pitch classes starting from a given root
@@ -60,8 +63,26 @@ export function getScaleDefinition(
   type: ScaleType
 ): ScaleDefinition {
   // Choose the interval set based on scale type
-  const intervals =
-    type === "major" ? MAJOR_INTERVALS : NATURAL_MINOR_INTERVALS;
+  let intervals: number[];
+  switch (type) {
+    case "major":
+      intervals = MAJOR_INTERVALS;
+      break;
+    case "natural_minor":
+      intervals = NATURAL_MINOR_INTERVALS;
+      break;
+    case "dorian":
+      intervals = DORIAN_INTERVALS;
+      break;
+    case "mixolydian":
+      intervals = MIXOLYDIAN_INTERVALS;
+      break;
+    case "phrygian":
+      intervals = PHRYGIAN_INTERVALS;
+      break;
+    default:
+      throw new Error(`Unsupported scale type: ${type}`);
+  }
 
   // Get rotated pitch classes starting from root
   const rotatedPitchClasses = rotatePitchClasses(root);
@@ -102,5 +123,38 @@ export function getMajorScale(root: PitchClass): ScaleDefinition {
  */
 export function getNaturalMinorScale(root: PitchClass): ScaleDefinition {
   return getScaleDefinition(root, "natural_minor");
+}
+
+/**
+ * Get a Dorian mode scale definition
+ * Dorian is the second mode of the major scale: W-H-W-W-W-H-W
+ * @param root - The root pitch class of the Dorian scale
+ * @returns ScaleDefinition for the Dorian scale
+ * @example getDorianScale("D") -> { root: "D", type: "dorian", pitchClasses: ["D", "E", "F", "G", "A", "B", "C"] }
+ */
+export function getDorianScale(root: PitchClass): ScaleDefinition {
+  return getScaleDefinition(root, "dorian");
+}
+
+/**
+ * Get a Mixolydian mode scale definition
+ * Mixolydian is the fifth mode of the major scale: W-W-H-W-W-H-W
+ * @param root - The root pitch class of the Mixolydian scale
+ * @returns ScaleDefinition for the Mixolydian scale
+ * @example getMixolydianScale("G") -> { root: "G", type: "mixolydian", pitchClasses: ["G", "A", "B", "C", "D", "E", "F"] }
+ */
+export function getMixolydianScale(root: PitchClass): ScaleDefinition {
+  return getScaleDefinition(root, "mixolydian");
+}
+
+/**
+ * Get a Phrygian mode scale definition
+ * Phrygian is the third mode of the major scale: H-W-W-W-H-W-W
+ * @param root - The root pitch class of the Phrygian scale
+ * @returns ScaleDefinition for the Phrygian scale
+ * @example getPhrygianScale("E") -> { root: "E", type: "phrygian", pitchClasses: ["E", "F", "G", "A", "B", "C", "D"] }
+ */
+export function getPhrygianScale(root: PitchClass): ScaleDefinition {
+  return getScaleDefinition(root, "phrygian");
 }
 

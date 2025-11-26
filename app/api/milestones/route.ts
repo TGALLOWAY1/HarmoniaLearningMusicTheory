@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { updateMilestonesProgressAndUnlock } from "@/lib/curriculum/milestonesService";
 
 type MilestoneDto = {
   id: number;
@@ -18,6 +19,10 @@ type GetMilestonesResponse = {
 
 export async function GET() {
   try {
+    // Update milestone progress and unlock status before fetching
+    await updateMilestonesProgressAndUnlock();
+
+    // Fetch updated milestones
     const milestones = await prisma.milestone.findMany({
       orderBy: { order: "asc" },
     });

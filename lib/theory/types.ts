@@ -6,7 +6,12 @@
 
 import type { PitchClass } from "./midiUtils";
 
-export type ScaleType = "major" | "natural_minor";
+export type ScaleType =
+  | "major"
+  | "natural_minor"
+  | "dorian"
+  | "mixolydian"
+  | "phrygian";
 
 export type ScaleDefinition = {
   root: PitchClass;
