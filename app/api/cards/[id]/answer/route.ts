@@ -107,7 +107,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const srs = calculateSM2({
       easeFactor: state.easeFactor,
       intervalDays: state.intervalDays,
-      repetitions: state.repetitions,
+      repetitions: state.repetitions ?? 0,
       lapses: state.lapses ?? 0,
       quality: sm2Quality,
     });

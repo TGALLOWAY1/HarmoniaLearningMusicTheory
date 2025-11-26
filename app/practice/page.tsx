@@ -84,7 +84,8 @@ export default function PracticePage() {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to submit quality rating");
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to submit quality rating (${res.status})`);
       }
 
       // After submitting quality, fetch the next card

@@ -215,6 +215,40 @@ WHERE typeof(lastResult) = 'integer' OR lastResult IN ('0', '1', 'true', 'false'
 
 ---
 
+## Bug Fixes - Quality Rating Submission Error
+
+### Issue
+Users reported "Failed to submit quality rating" error when clicking quality buttons.
+
+### Root Cause
+1. Error handling in UI was too generic, not showing actual API error messages
+2. Missing null safety for `repetitions` field in API endpoint (only `lapses` had fallback)
+
+### Solution
+
+**1. Improved Error Handling (`app/practice/page.tsx`):**
+- Updated `submitQuality()` to parse and display actual API error messages
+- Changed from generic "Failed to submit quality rating" to showing specific error from API response
+- Helps with debugging and provides better user feedback
+
+**2. Added Null Safety (`app/api/cards/[id]/answer/route.ts`):**
+- Added `?? 0` fallback for `repetitions` field (matching `lapses`)
+- Prevents errors if field is missing from database records
+- Ensures SM-2 calculation always has valid numeric values
+
+**Changes:**
+```typescript
+// Before
+repetitions: state.repetitions,
+
+// After  
+repetitions: state.repetitions ?? 0,
+```
+
+These fixes ensure robust error handling and prevent runtime errors from missing database fields.
+
+---
+
 ## Summary
 
 Milestone 4 successfully integrates the SuperMemo 2 (SM-2) spaced repetition algorithm into Harmonia:
