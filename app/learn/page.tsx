@@ -48,14 +48,14 @@ export default function LearnPage() {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <div className="max-w-4xl mx-auto px-6 py-16 space-y-6">
+      <div className="max-w-5xl mx-auto px-6 py-16 space-y-8">
         <div>
           <h1 className="text-3xl font-light tracking-tight mb-2">
-            Learn path
+            Learning path
           </h1>
           <p className="text-muted max-w-xl text-sm">
-            Follow a structured path through notes, scales, chords, and the circle of fifths.
-            Milestones unlock over time as you practice and explore.
+            Follow a structured curriculum through notes, scales, chords, and the circle of fifths.
+            Milestones unlock automatically as you master concepts through practice.
           </p>
         </div>
 
@@ -78,7 +78,7 @@ export default function LearnPage() {
         )}
 
         {!loading && !error && data && (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             {data.map((m) => (
               <MilestoneCard key={m.id} milestone={m} />
             ))}
@@ -92,35 +92,43 @@ export default function LearnPage() {
 function MilestoneCard({ milestone }: { milestone: MilestoneDto }) {
   const pct = Math.round(milestone.progress * 100);
 
+  // Determine status chip
+  let statusChip: JSX.Element;
+  if (!milestone.isUnlocked) {
+    statusChip = (
+      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border border-subtle text-muted opacity-60">
+        Locked
+      </span>
+    );
+  } else if (milestone.isCompleted) {
+    statusChip = (
+      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide bg-foreground text-surface border border-foreground">
+        Completed
+      </span>
+    );
+  } else {
+    statusChip = (
+      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border border-subtle text-muted">
+        In progress
+      </span>
+    );
+  }
+
   return (
-    <div className="rounded-2xl border border-subtle bg-surface p-4 shadow-sm space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-semibold">{milestone.title}</h2>
-          <p className="text-xs text-muted mt-1">
+    <div className="rounded-2xl border border-subtle bg-surface p-5 shadow-sm space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <h2 className="text-base font-semibold text-foreground mb-1">
+            {milestone.title}
+          </h2>
+          <p className="text-xs text-muted leading-relaxed">
             {milestone.description}
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <span
-            className={
-              "px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border " +
-              (milestone.isUnlocked
-                ? "border-subtle text-muted"
-                : "border-subtle text-muted opacity-60")
-            }
-          >
-            {milestone.isUnlocked ? "Unlocked" : "Locked"}
-          </span>
-          {milestone.isCompleted && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide bg-foreground text-surface">
-              Completed
-            </span>
-          )}
-        </div>
+        <div className="flex-shrink-0">{statusChip}</div>
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <div className="flex justify-between text-[10px] text-muted">
           <span>Progress</span>
           <span>{pct}%</span>
@@ -133,19 +141,27 @@ function MilestoneCard({ milestone }: { milestone: MilestoneDto }) {
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3 pt-1">
         {milestone.isUnlocked ? (
-          <Link
-            href={`/practice?milestone=${encodeURIComponent(milestone.key)}`}
-            className="text-[11px] font-medium text-foreground border border-subtle rounded-full px-3 py-1 hover:bg-surface-muted transition"
-          >
-            Practice this
-          </Link>
+          <>
+            <Link
+              href={`/learn/${milestone.key}`}
+              className="inline-flex items-center justify-center rounded-full bg-foreground text-surface px-4 py-2 text-xs font-medium hover:opacity-90 transition"
+            >
+              Open milestone
+            </Link>
+            <Link
+              href={`/practice?milestone=${encodeURIComponent(milestone.key)}`}
+              className="inline-flex items-center justify-center rounded-full border border-subtle text-foreground px-3 py-1.5 text-[11px] font-medium hover:bg-surface-muted transition"
+            >
+              Practice this
+            </Link>
+          </>
         ) : (
           <button
             type="button"
             disabled
-            className="text-[11px] font-medium text-muted border border-subtle rounded-full px-3 py-1 opacity-60 cursor-not-allowed"
+            className="inline-flex items-center justify-center rounded-full border border-subtle text-muted px-4 py-2 text-xs font-medium opacity-60 cursor-not-allowed"
           >
             Locked
           </button>
