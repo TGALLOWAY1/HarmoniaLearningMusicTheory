@@ -7,6 +7,7 @@ type LoadedCard = {
   id: number;
   question: string;
   options: string[];
+  correctIndex: number;
 };
 
 export default function PracticePage() {
@@ -33,6 +34,7 @@ export default function PracticePage() {
         id: data.card.id,
         question: data.card.question,
         options: data.card.options,
+        correctIndex: data.card.correctIndex,
       });
     } catch (err: any) {
       setError(err.message ?? "Unknown error");
@@ -56,18 +58,37 @@ export default function PracticePage() {
     setError(null);
 
     try {
+      // Check correctness locally by comparing selectedIndex with correctIndex
+      setCorrectIndex(card.correctIndex);
+    } catch (err: any) {
+      setError(err.message ?? "Unknown error");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function submitQuality(q: 0 | 1 | 2 | 3) {
+    if (!card || selectedIndex === null) return;
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
       const res = await fetch(`/api/cards/${card.id}/answer`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selectedIndex }),
+        body: JSON.stringify({
+          selectedIndex,
+          quality: q,
+        }),
       });
 
       if (!res.ok) {
-        throw new Error("Failed to submit answer");
+        throw new Error("Failed to submit quality rating");
       }
 
-      const data = await res.json();
-      setCorrectIndex(data.correctIndex);
+      // After submitting quality, fetch the next card
+      await fetchNextCard();
     } catch (err: any) {
       setError(err.message ?? "Unknown error");
     } finally {
@@ -116,7 +137,7 @@ export default function PracticePage() {
               showResult={correctIndex !== null}
             />
 
-            <div className="mt-4 flex gap-3">
+            <div className="mt-4 flex flex-col gap-3">
               {correctIndex === null ? (
                 <button
                   type="button"
@@ -127,13 +148,40 @@ export default function PracticePage() {
                   {submitting ? "Checking..." : "Check answer"}
                 </button>
               ) : (
-                <button
-                  type="button"
-                  onClick={fetchNextCard}
-                  className="rounded-full bg-surface px-4 py-2 text-sm font-medium text-foreground border border-subtle hover:bg-surface-muted"
-                >
-                  Next card
-                </button>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <button
+                    type="button"
+                    onClick={() => submitQuality(0)}
+                    disabled={submitting}
+                    className="rounded-full bg-red-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-600 disabled:opacity-60"
+                  >
+                    Again
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => submitQuality(1)}
+                    disabled={submitting}
+                    className="rounded-full bg-orange-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-orange-600 disabled:opacity-60"
+                  >
+                    Hard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => submitQuality(2)}
+                    disabled={submitting}
+                    className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-600 disabled:opacity-60"
+                  >
+                    Good
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => submitQuality(3)}
+                    disabled={submitting}
+                    className="rounded-full bg-blue-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-600 disabled:opacity-60"
+                  >
+                    Easy
+                  </button>
+                </div>
               )}
             </div>
           </>
