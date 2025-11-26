@@ -5,6 +5,21 @@
  * scales, chords, and harmonic relationships.
  */
 
+// Export MIDI utilities
+export {
+  midiToPitchClass,
+  midiToOctave,
+  midiToNoteName,
+  isBlackKey,
+  isWhiteKey,
+  generateMidiRange,
+  mapToOctave,
+  mapNotesToOctave,
+  pitchClassToMidi,
+  type PitchClass,
+  type NoteName,
+} from "./midiUtils";
+
 /**
  * TODO: Get the notes of a major scale starting from a given root note.
  * @param root - The root note (e.g., "C", "D", "F#")
