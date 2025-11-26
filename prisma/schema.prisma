@@ -60,3 +60,15 @@ model CardAttempt {
   responseMs    Int        // time taken to answer, in ms (optional in UI)
   createdAt     DateTime   @default(now())
 }
+
+model Milestone {
+  id          Int     @id @default(autoincrement())
+  key         String  @unique
+  title       String
+  description String
+  order       Int
+  isUnlocked  Boolean @default(false)
+  isCompleted Boolean @default(false)
+  progress    Float   @default(0.0)
+  @@index([order])
+}
