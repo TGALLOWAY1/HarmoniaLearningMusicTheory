@@ -1,10 +1,24 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // 1) Fetch all templates
-    const templates = await prisma.cardTemplate.findMany();
+    // Parse milestoneKey query parameter
+    const url = new URL(request.url);
+    const milestoneKey = url.searchParams.get("milestoneKey");
+
+    // 1) Fetch all templates (optionally filtered by milestoneKey)
+    const templates = await prisma.cardTemplate.findMany({
+      ...(milestoneKey && { where: { milestoneKey } }),
+    });
+
+    // If milestoneKey was provided but no templates match, return 404
+    if (milestoneKey && templates.length === 0) {
+      return NextResponse.json(
+        { error: "No cards found for this milestoneKey." },
+        { status: 404 }
+      );
+    }
 
     if (templates.length === 0) {
       return NextResponse.json({ error: "No cards available" }, { status: 404 });

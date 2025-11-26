@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 type MilestoneDto = {
   id: number;
@@ -130,6 +131,25 @@ function MilestoneCard({ milestone }: { milestone: MilestoneDto }) {
             style={{ width: `${pct}%` }}
           />
         </div>
+      </div>
+
+      <div className="flex justify-end">
+        {milestone.isUnlocked ? (
+          <Link
+            href={`/practice?milestone=${encodeURIComponent(milestone.key)}`}
+            className="text-[11px] font-medium text-foreground border border-subtle rounded-full px-3 py-1 hover:bg-surface-muted transition"
+          >
+            Practice this
+          </Link>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="text-[11px] font-medium text-muted border border-subtle rounded-full px-3 py-1 opacity-60 cursor-not-allowed"
+          >
+            Locked
+          </button>
+        )}
       </div>
     </div>
   );

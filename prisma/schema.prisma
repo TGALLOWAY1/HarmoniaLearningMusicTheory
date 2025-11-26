@@ -21,6 +21,7 @@ model CardTemplate {
   optionD      String
   correctIndex Int       // 0..3
   meta         Json?     // extra structured data (root, quality, scale type, etc.)
+  milestoneKey String?   // e.g. "FOUNDATION", "TRIADS", "CIRCLE_OF_FIFTHS"
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

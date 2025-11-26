@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Flashcard } from "@/components/flashcards/Flashcard";
 
 type LoadedCard = {
@@ -13,6 +14,9 @@ type LoadedCard = {
 };
 
 export default function PracticePage() {
+  const searchParams = useSearchParams();
+  const milestone = searchParams.get("milestone");
+
   const [card, setCard] = useState<LoadedCard | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [correctIndex, setCorrectIndex] = useState<number | null>(null);
@@ -27,8 +31,19 @@ export default function PracticePage() {
     setCorrectIndex(null);
 
     try {
-      const res = await fetch("/api/cards/next");
+      const base = "/api/cards/next";
+      const url = milestone
+        ? `${base}?milestoneKey=${encodeURIComponent(milestone)}`
+        : base;
+
+      const res = await fetch(url);
       if (!res.ok) {
+        if (res.status === 404) {
+          const errorData = await res.json().catch(() => ({}));
+          if (errorData.error?.includes("milestoneKey")) {
+            throw new Error("No cards found for this milestone yet.");
+          }
+        }
         throw new Error("Failed to fetch next card");
       }
       const data = await res.json();
@@ -49,7 +64,7 @@ export default function PracticePage() {
 
   useEffect(() => {
     fetchNextCard();
-  }, []);
+  }, [milestone]);
 
   async function handleSelectOption(index: number) {
     setSelectedIndex(index);
