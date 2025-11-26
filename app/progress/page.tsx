@@ -99,7 +99,7 @@ export default function ProgressPage() {
             Theory practice overview
           </h1>
           <p className="mt-2 text-sm text-muted">
-            Review your flashcard performance and what's coming up in your spaced
+            Review your flashcard performance and what&apos;s coming up in your spaced
             repetition schedule.
           </p>
         </header>
