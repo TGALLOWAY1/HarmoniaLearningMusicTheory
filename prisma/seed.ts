@@ -25,6 +25,7 @@ async function main() {
         quality: "maj",
         type: "triad",
       },
+      milestoneKey: "TRIADS",
     },
   });
 
@@ -42,6 +43,7 @@ async function main() {
       meta: {
         notes: ["C", "E", "G"],
       },
+      milestoneKey: "TRIADS",
     },
   });
 
@@ -59,6 +61,7 @@ async function main() {
       meta: {
         sharps: 1,
       },
+      milestoneKey: "CIRCLE_OF_FIFTHS",
     },
   });
 
@@ -76,6 +79,7 @@ async function main() {
       optionD: "D",
       correctIndex: 0,
       meta: { clockPosition: 12 },
+      milestoneKey: "CIRCLE_OF_FIFTHS",
     },
   });
 
@@ -91,6 +95,7 @@ async function main() {
       optionD: "A minor",
       correctIndex: 0,
       meta: { majorRoot: "G" },
+      milestoneKey: "CIRCLE_OF_FIFTHS",
     },
   });
 
@@ -105,6 +110,7 @@ async function main() {
       optionD: "G minor",
       correctIndex: 0,
       meta: { majorRoot: "C" },
+      milestoneKey: "CIRCLE_OF_FIFTHS",
     },
   });
 
@@ -119,6 +125,7 @@ async function main() {
       optionD: "F# minor",
       correctIndex: 0,
       meta: { majorRoot: "D" },
+      milestoneKey: "CIRCLE_OF_FIFTHS",
     },
   });
 
@@ -134,6 +141,7 @@ async function main() {
       optionD: "A",
       correctIndex: 3, // A (IV of D)
       meta: { majorRoot: "D" },
+      milestoneKey: "CIRCLE_OF_FIFTHS",
     },
   });
 
@@ -148,6 +156,7 @@ async function main() {
       optionD: "A",
       correctIndex: 0, // F (IV of C)
       meta: { majorRoot: "C" },
+      milestoneKey: "CIRCLE_OF_FIFTHS",
     },
   });
 
@@ -162,6 +171,7 @@ async function main() {
       optionD: "A",
       correctIndex: 0, // C (IV of G)
       meta: { majorRoot: "G" },
+      milestoneKey: "CIRCLE_OF_FIFTHS",
     },
   });
 
