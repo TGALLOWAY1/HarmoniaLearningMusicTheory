@@ -1,0 +1,20 @@
+{
+  "rules": [
+    {
+      "pattern": "**/*",
+      "assistant_instructions": [
+        "Before making significant code changes, read `/docs/PRD.md`, `/docs/API_SPEC.md`, and `/docs/SCHEMA.md`.",
+        "Prefer adding new API routes and models in line with the existing schema and spec rather than inventing new patterns.",
+        "This app is single-user with no authentication; do not add auth flows.",
+        "Favor piano-roll visualization over traditional staff notation for all music theory UI."
+      ]
+    },
+    {
+      "pattern": "docs/**",
+      "assistant_instructions": [
+        "When editing docs, preserve the overall structure and numbering.",
+        "PRD.md, API_SPEC.md, and SCHEMA.md are the source of truth for requirements."
+      ]
+    }
+  ]
+}
