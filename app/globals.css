@@ -82,3 +82,37 @@
   animation: note-on-pulse 0.3s ease-out;
 }
 
+/* Key pop animation for active keys */
+@keyframes key-pop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  40% {
+    transform: translateY(-2px) scale(1.02);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.key-active-anim {
+  animation: key-pop 160ms ease-out;
+}
+
+/* Strong pop animation for active keys */
+@keyframes key-strong-pop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  30% {
+    transform: translateY(-3px) scale(1.04);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.key-strong-active {
+  animation: key-strong-pop 180ms ease-out;
+}
+

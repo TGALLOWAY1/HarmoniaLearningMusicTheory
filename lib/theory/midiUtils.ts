@@ -44,6 +44,22 @@ const PITCH_CLASSES: PitchClass[] = [
 // Black keys are at pitch class indices: 1, 3, 6, 8, 10 (C#, D#, F#, G#, A#)
 const BLACK_KEY_INDICES = new Set([1, 3, 6, 8, 10]);
 
+// Pitch class to semitone mapping (C=0, C#=1, D=2, etc.)
+const PITCH_CLASS_TO_SEMITONE: Record<PitchClass, number> = {
+  C: 0,
+  "C#": 1,
+  D: 2,
+  "D#": 3,
+  E: 4,
+  F: 5,
+  "F#": 6,
+  G: 7,
+  "G#": 8,
+  A: 9,
+  "A#": 10,
+  B: 11,
+};
+
 /**
  * Convert MIDI note number to pitch class
  * @param midi - MIDI note number (0-127)
@@ -70,13 +86,27 @@ export function pitchClassToMidi(
   pitchClass: PitchClass,
   octave: number
 ): number {
-  const pitchClassIndex = PITCH_CLASSES.indexOf(pitchClass);
-  if (pitchClassIndex === -1) {
+  const semitone = PITCH_CLASS_TO_SEMITONE[pitchClass];
+  if (semitone === undefined) {
     throw new Error(`Invalid pitch class: ${pitchClass}`);
   }
+  // Consistent with midiToOctave formula: MIDI 60 = C4
   // MIDI note for C of target octave: (octave + 1) * 12
-  const octaveC = (octave + 1) * 12;
-  return octaveC + pitchClassIndex;
+  return semitone + (octave + 1) * 12;
+}
+
+/**
+ * Convert an array of pitch classes to MIDI note numbers in a given octave
+ * @param pitchClasses - Array of pitch classes
+ * @param octave - Octave number (e.g., 3 for C3)
+ * @returns Array of MIDI note numbers
+ * @example pitchClassesToMidi(["C", "E", "G"], 3) -> [48, 52, 55]
+ */
+export function pitchClassesToMidi(
+  pitchClasses: PitchClass[],
+  octave: number
+): number[] {
+  return pitchClasses.map((pc) => pitchClassToMidi(pc, octave));
 }
 
 /**
