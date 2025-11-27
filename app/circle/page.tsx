@@ -61,13 +61,49 @@ export default function CirclePage() {
         setSummaryError(null);
         const response = await fetch("/api/circle/summary");
         if (!response.ok) {
-          throw new Error("Failed to fetch circle summary");
+          const errorText = await response.text();
+          console.error("[Circle Page] API error response:", errorText);
+          throw new Error(`Failed to fetch circle summary: ${response.status}`);
         }
         const data: CircleSummaryResponse = await response.json();
-        setCircleSummary(data.keys);
+        
+        // Validate response structure
+        if (!data || !Array.isArray(data.keys)) {
+          console.error("[Circle Page] Invalid API response structure:", data);
+          throw new Error("Invalid response structure");
+        }
+        
+        // Validate each summary has required properties
+        const validKeys = data.keys.filter(key => {
+          const isValid = 
+            key &&
+            typeof key.id === 'string' &&
+            typeof key.mastery === 'number' &&
+            !isNaN(key.mastery) &&
+            typeof key.dueCount === 'number';
+          
+          if (!isValid) {
+            console.warn("[Circle Page] Invalid key summary:", key);
+          }
+          return isValid;
+        });
+        
+        // Fix invalid summaries
+        const fixedKeys = data.keys.map(key => ({
+          id: key.id || 'unknown',
+          mastery: typeof key.mastery === 'number' && !isNaN(key.mastery) ? key.mastery : 0,
+          avgRecallMs: key.avgRecallMs ?? null,
+          lastReviewedAt: key.lastReviewedAt ?? null,
+          dueCount: typeof key.dueCount === 'number' ? key.dueCount : 0,
+        }));
+        
+        console.log(`[Circle Page] Loaded ${fixedKeys.length} key summaries`);
+        setCircleSummary(fixedKeys);
       } catch (error) {
-        console.error("Error fetching circle summary:", error);
+        console.error("[Circle Page] Error fetching circle summary:", error);
         setSummaryError("Couldn't load mastery data");
+        // Set empty array as fallback
+        setCircleSummary([]);
       } finally {
         setSummaryLoading(false);
       }
@@ -79,9 +115,13 @@ export default function CirclePage() {
   const masteryByRoot = useMemo(() => {
     const map: Record<PitchClass, number> = {} as Record<PitchClass, number>;
     for (const summary of circleSummary) {
+      if (!summary || !summary.id) continue;
       // Extract root from id format: "<root>_major"
       const root = summary.id.split("_")[0] as PitchClass;
-      map[root] = summary.mastery;
+      const mastery = typeof summary.mastery === 'number' && !isNaN(summary.mastery) 
+        ? summary.mastery 
+        : 0;
+      map[root] = mastery;
     }
     return map;
   }, [circleSummary]);
@@ -91,11 +131,16 @@ export default function CirclePage() {
     const map: Record<PitchClass, { mastery: number; dueCount: number }> =
       {} as Record<PitchClass, { mastery: number; dueCount: number }>;
     for (const summary of circleSummary) {
+      if (!summary || !summary.id) continue;
       // Extract root from id format: "<root>_major"
       const root = summary.id.split("_")[0] as PitchClass;
+      const mastery = typeof summary.mastery === 'number' && !isNaN(summary.mastery) 
+        ? summary.mastery 
+        : 0;
+      const dueCount = typeof summary.dueCount === 'number' ? summary.dueCount : 0;
       map[root] = {
-        mastery: summary.mastery,
-        dueCount: summary.dueCount,
+        mastery,
+        dueCount,
       };
     }
     return map;
