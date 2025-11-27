@@ -1,10 +1,10 @@
-# Milestone 12 - Curriculum UI Polish Notes
+# Milestone 13 - Curriculum UI Polish Notes
 
 This document contains summaries from each prompt/task completed during Milestone 12 Curriculum UI Polish development.
 
 ---
 
-## Prompt 12.1 — Refine Milestone Overview Cards
+## Prompt — Refine Milestone Overview Cards
 
 ### Goal
 Polish the `/learn` milestone overview cards to improve scan-ability and visual clarity.
@@ -44,7 +44,7 @@ Polish the `/learn` milestone overview cards to improve scan-ability and visual 
 
 ---
 
-## Prompt 12.2 — Improve Locked-State UX
+## Prompt — Improve Locked-State UX
 
 ### Goal
 Improve the locked-state user experience on `/learn/[key]`.
@@ -79,7 +79,7 @@ Improve the locked-state user experience on `/learn/[key]`.
 
 ---
 
-## Prompt 12.3 — Add 'Progress Within Milestone' Summary Section
+## Prompt — Add 'Progress Within Milestone' Summary Section
 
 ### Goal
 Add a "Progress Summary" section to `/learn/[key]` under the title block showing concrete numbers.
@@ -127,7 +127,7 @@ Add a "Progress Summary" section to `/learn/[key]` under the title block showing
 
 ---
 
-## Prompt 12.4 — Add Card Counts to Milestone API Response
+## Prompt — Add Card Counts to Milestone API Response
 
 ### Goal
 Enhance `/api/milestones` to include per-milestone card totals so detail pages don't need to compute totals manually.
@@ -171,7 +171,7 @@ Enhance `/api/milestones` to include per-milestone card totals so detail pages d
 
 ---
 
-## Prompt 12.5 — Auto-Scroll to Active Section
+## Prompt — Auto-Scroll to Active Section
 
 ### Goal
 Add client-side auto-scroll that scrolls the user to the first "incomplete" section of a milestone when opening a milestone detail page.
@@ -209,7 +209,7 @@ Add client-side auto-scroll that scrolls the user to the first "incomplete" sect
 
 ---
 
-## Prompt 12.6 — Add Top Navigation: Previous / Next Milestones
+## Prompt — Add Top Navigation: Previous / Next Milestones
 
 ### Goal
 Add top and bottom milestone navigation controls to `/learn/[key]` to dramatically improve flow through the curriculum.
@@ -253,7 +253,7 @@ Add top and bottom milestone navigation controls to `/learn/[key]` to dramatical
 
 ---
 
-## Prompt 12.7 — Stability Pass (Lint + Build + Error State Audit)
+## Prompt — Stability Pass (Lint + Build + Error State Audit)
 
 ### Goal
 Perform a stability pass after implementing Milestone 12 to ensure everything works correctly.
@@ -299,7 +299,7 @@ Perform a stability pass after implementing Milestone 12 to ensure everything wo
 
 ## Summary
 
-Milestone 12 Curriculum UI Polish significantly enhances the user experience of the curriculum system:
+Milestone 13 Curriculum UI Polish significantly enhances the user experience of the curriculum system:
 
 1. **Visual Improvements:**
    - Refined milestone overview cards with clear status indicators
