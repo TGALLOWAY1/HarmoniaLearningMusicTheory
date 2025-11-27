@@ -139,7 +139,10 @@ function computeKeySummary(
 
 export async function GET() {
   try {
+    console.log("[Circle Summary API] Starting request...");
+    
     // Fetch all circle-related CardTemplates once
+    console.log("[Circle Summary API] Fetching card templates...");
     const allCircleTemplates = await prisma.cardTemplate.findMany({
       where: {
         kind: {
@@ -151,27 +154,72 @@ export async function GET() {
         attempts: true,
       },
     });
+    console.log(`[Circle Summary API] Found ${allCircleTemplates.length} circle templates`);
 
     // Get all major keys from the circle
     const nodes = getCircleNodes();
+    console.log(`[Circle Summary API] Processing ${nodes.length} circle nodes`);
     const summaries: KeySummaryDto[] = [];
 
     // Compute summary for each major key
     for (const node of nodes) {
-      const summary = computeKeySummary(node.root, allCircleTemplates);
-      summaries.push(summary);
+      try {
+        const summary = computeKeySummary(node.root, allCircleTemplates);
+        // Validate summary structure
+        if (typeof summary.mastery !== 'number' || isNaN(summary.mastery)) {
+          console.error(`[Circle Summary API] Invalid mastery for ${node.root}:`, summary.mastery);
+          summary.mastery = 0; // Fallback to 0
+        }
+        summaries.push(summary);
+      } catch (nodeError) {
+        console.error(`[Circle Summary API] Error processing node ${node.root}:`, nodeError);
+        // Add a default summary for this node
+        summaries.push({
+          id: `${node.root}_major`,
+          mastery: 0,
+          avgRecallMs: null,
+          lastReviewedAt: null,
+          dueCount: 0,
+        });
+      }
+    }
+
+    // Validate all summaries have mastery
+    const invalidSummaries = summaries.filter(s => typeof s.mastery !== 'number' || isNaN(s.mastery));
+    if (invalidSummaries.length > 0) {
+      console.error("[Circle Summary API] Found invalid summaries:", invalidSummaries);
+      // Fix invalid summaries
+      invalidSummaries.forEach(s => {
+        s.mastery = 0;
+      });
     }
 
     const response: CircleSummaryResponse = {
       keys: summaries,
     };
 
+    console.log(`[Circle Summary API] Returning ${summaries.length} summaries`);
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Error computing circle summary:", error);
+    console.error("[Circle Summary API] Fatal error:", error);
+    console.error("[Circle Summary API] Error stack:", error instanceof Error ? error.stack : 'No stack trace');
+    
+    // Return empty but valid response structure
+    const nodes = getCircleNodes();
+    const fallbackSummaries: KeySummaryDto[] = nodes.map(node => ({
+      id: `${node.root}_major`,
+      mastery: 0,
+      avgRecallMs: null,
+      lastReviewedAt: null,
+      dueCount: 0,
+    }));
+
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { 
+        keys: fallbackSummaries,
+        error: error instanceof Error ? error.message : "Internal server error"
+      },
+      { status: 200 } // Return 200 with fallback data so frontend doesn't break
     );
   }
 }

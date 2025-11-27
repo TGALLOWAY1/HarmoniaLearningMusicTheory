@@ -10,6 +10,12 @@ import {
   getMilestoneContent,
   type MilestoneContentSection,
 } from "@/lib/curriculum/milestonesContent";
+import {
+  getSkillModulesForMilestone,
+  type SkillModule,
+} from "@/lib/curriculum/skillModules";
+import { SkillModuleRenderer } from "@/components/curriculum/SkillModuleRenderer";
+import { isModuleCompleted } from "@/lib/curriculum/skillCompletion";
 import type { PitchClass } from "@/lib/theory";
 
 type MilestoneDto = {
@@ -230,6 +236,39 @@ export default function MilestoneDetailPage() {
 
   // Unlocked state
   const progressPercent = Math.round(milestone.progress * 100);
+  const content = getMilestoneContent(milestoneKey);
+  const skillModules = getSkillModulesForMilestone(milestoneKey);
+  
+  // Calculate completion stats for skill modules (with state for updates)
+  const [completedCount, setCompletedCount] = useState(() =>
+    skillModules.filter((module) => isModuleCompleted(module.id)).length
+  );
+  
+  // Update completion count when modules complete
+  useEffect(() => {
+    const updateCount = () => {
+      const modules = getSkillModulesForMilestone(milestoneKey);
+      setCompletedCount(
+        modules.filter((module) => isModuleCompleted(module.id)).length
+      );
+    };
+    
+    // Initial calculation
+    updateCount();
+    
+    // Listen for completion events
+    const handleCompletionEvent = () => {
+      updateCount();
+    };
+    
+    window.addEventListener("skillModuleCompleted", handleCompletionEvent);
+    window.addEventListener("storage", handleCompletionEvent);
+    
+    return () => {
+      window.removeEventListener("skillModuleCompleted", handleCompletionEvent);
+      window.removeEventListener("storage", handleCompletionEvent);
+    };
+  }, [milestoneKey]);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -318,6 +357,23 @@ export default function MilestoneDetailPage() {
         ) : (
           <div className="rounded-2xl border border-subtle bg-surface p-6 shadow-sm">
             <p className="text-sm text-muted">Content coming soon.</p>
+          </div>
+        )}
+
+        {/* Skill modules */}
+        {skillModules.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-medium">Skill modules</h2>
+              <span className="text-sm text-muted">
+                {completedCount} of {skillModules.length} completed
+              </span>
+            </div>
+            <div className="space-y-3">
+              {skillModules.map((module) => (
+                <SkillModuleRenderer key={module.id} module={module} />
+              ))}
+            </div>
           </div>
         )}
 

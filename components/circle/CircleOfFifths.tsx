@@ -223,14 +223,16 @@ export function CircleOfFifths({
             <div>
               Mastery:{" "}
               <span className="font-medium text-foreground">
-                {(statsByRoot[hoveredRoot].mastery * 100).toFixed(0)}%
+                {statsByRoot?.[hoveredRoot]?.mastery !== undefined
+                  ? (statsByRoot[hoveredRoot].mastery * 100).toFixed(0)
+                  : "0"}%
               </span>
             </div>
             <div>
               Due:{" "}
               <span className="font-medium text-foreground">
-                {statsByRoot[hoveredRoot].dueCount} card
-                {statsByRoot[hoveredRoot].dueCount !== 1 ? "s" : ""}
+                {statsByRoot?.[hoveredRoot]?.dueCount ?? 0} card
+                {(statsByRoot?.[hoveredRoot]?.dueCount ?? 0) !== 1 ? "s" : ""}
               </span>
             </div>
           </div>
