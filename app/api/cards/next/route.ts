@@ -25,19 +25,19 @@ export async function GET(request: Request) {
     }
 
     // 2) Ensure CardState exists for each template
-    const templateIds = templates.map((t) => t.id);
+    const templateIds = templates.map((t: { id: number }) => t.id);
 
     const existingStates = await prisma.cardState.findMany({
       where: { cardId: { in: templateIds } },
     });
 
-    const existingMap = new Map(existingStates.map((s) => [s.cardId, s]));
+    const existingMap = new Map(existingStates.map((s: { cardId: number }) => [s.cardId, s]));
 
-    const missingTemplateIds = templateIds.filter((id) => !existingMap.has(id));
+    const missingTemplateIds = templateIds.filter((id: number) => !existingMap.has(id));
 
     if (missingTemplateIds.length > 0) {
       await prisma.cardState.createMany({
-        data: missingTemplateIds.map((cardId) => ({ cardId })),
+        data: missingTemplateIds.map((cardId: number) => ({ cardId })),
       });
     }
 
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
 
     // 4) Partition cards: due cards (dueAt <= now) vs future cards
     const now = new Date();
-    const dueCards = allStates.filter((s) => s.dueAt <= now);
+    const dueCards = allStates.filter((s: { dueAt: Date }) => s.dueAt <= now);
 
     let nextState: (typeof allStates)[0];
 
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
 
       // Find all cards with the same earliest due date
       const futureWithSameDue = allStates.filter(
-        (s) => s.dueAt.getTime() === firstDueTime
+        (s: { dueAt: Date }) => s.dueAt.getTime() === firstDueTime
       );
 
       // Randomly select among cards with the same earliest due date
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "No card state found" }, { status: 500 });
     }
 
-    const nextTemplate = templates.find((t) => t.id === nextState.cardId);
+    const nextTemplate = templates.find((t: { id: number }) => t.id === nextState.cardId);
 
     if (!nextTemplate) {
       return NextResponse.json({ error: "Card state mismatch" }, { status: 500 });

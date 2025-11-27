@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Lock } from "lucide-react";
 
 type MilestoneDto = {
   id: number;
@@ -12,6 +13,9 @@ type MilestoneDto = {
   isUnlocked: boolean;
   isCompleted: boolean;
   progress: number;
+  totalCards: number;
+  seenCards: number;
+  masteredCards: number;
 };
 
 type GetMilestonesResponse = {
@@ -92,48 +96,33 @@ export default function LearnPage() {
 function MilestoneCard({ milestone }: { milestone: MilestoneDto }) {
   const pct = Math.round(milestone.progress * 100);
 
-  // Determine status chip
-  let statusChip: JSX.Element;
-  if (!milestone.isUnlocked) {
-    statusChip = (
-      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border border-subtle text-muted opacity-60">
-        Locked
-      </span>
-    );
-  } else if (milestone.isCompleted) {
-    statusChip = (
-      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide bg-foreground text-surface border border-foreground">
-        Completed
-      </span>
-    );
-  } else {
-    statusChip = (
-      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border border-subtle text-muted">
-        In progress
-      </span>
-    );
-  }
-
   return (
-    <div className="rounded-2xl border border-subtle bg-surface p-5 shadow-sm space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-base font-semibold text-foreground mb-1">
-            {milestone.title}
-          </h2>
-          <p className="text-xs text-muted leading-relaxed">
-            {milestone.description}
-          </p>
-        </div>
-        <div className="flex-shrink-0">{statusChip}</div>
+    <div className="rounded-2xl border border-subtle bg-surface p-5 shadow-sm space-y-3">
+      {/* Status row at top */}
+      <div className="flex items-center">
+        <MilestoneStatusBadge
+          isUnlocked={milestone.isUnlocked}
+          isCompleted={milestone.isCompleted}
+        />
       </div>
 
-      <div className="space-y-1.5">
+      {/* Title and subtitle */}
+      <div className="space-y-1">
+        <h2 className="text-base font-semibold text-foreground">
+          {milestone.title}
+        </h2>
+        <p className="text-xs text-muted leading-relaxed">
+          {milestone.description}
+        </p>
+      </div>
+
+      {/* Smaller progress bar */}
+      <div className="space-y-1">
         <div className="flex justify-between text-[10px] text-muted">
           <span>Progress</span>
           <span>{pct}%</span>
         </div>
-        <div className="h-1.5 rounded-full bg-surface-muted overflow-hidden">
+        <div className="h-1 rounded-full bg-surface-muted overflow-hidden">
           <div
             className="h-full rounded-full bg-foreground transition-[width] duration-200"
             style={{ width: `${pct}%` }}
@@ -141,12 +130,13 @@ function MilestoneCard({ milestone }: { milestone: MilestoneDto }) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 pt-1">
+      {/* CTA buttons */}
+      <div className="flex items-center gap-2 pt-1">
         {milestone.isUnlocked ? (
           <>
             <Link
               href={`/learn/${milestone.key}`}
-              className="inline-flex items-center justify-center rounded-full bg-foreground text-surface px-4 py-2 text-xs font-medium hover:opacity-90 transition"
+              className="inline-flex items-center justify-center rounded-full bg-foreground text-surface px-4 py-2 text-xs font-medium hover:opacity-90 transition flex-1"
             >
               Open milestone
             </Link>
@@ -158,16 +148,58 @@ function MilestoneCard({ milestone }: { milestone: MilestoneDto }) {
             </Link>
           </>
         ) : (
-          <button
-            type="button"
-            disabled
-            className="inline-flex items-center justify-center rounded-full border border-subtle text-muted px-4 py-2 text-xs font-medium opacity-60 cursor-not-allowed"
-          >
-            Locked
-          </button>
+          <>
+            <button
+              type="button"
+              disabled
+              title="Complete previous milestones to unlock this content"
+              className="inline-flex items-center justify-center rounded-full bg-foreground text-surface px-4 py-2 text-xs font-medium opacity-50 cursor-not-allowed flex-1"
+            >
+              Open milestone
+            </button>
+            <button
+              type="button"
+              disabled
+              title="Complete previous milestones to unlock this content"
+              className="inline-flex items-center justify-center rounded-full border border-subtle text-muted px-3 py-1.5 text-[11px] font-medium opacity-50 cursor-not-allowed"
+            >
+              Practice this
+            </button>
+          </>
         )}
       </div>
     </div>
+  );
+}
+
+function MilestoneStatusBadge({
+  isUnlocked,
+  isCompleted,
+}: {
+  isUnlocked: boolean;
+  isCompleted: boolean;
+}) {
+  if (!isUnlocked) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium text-muted bg-surface-muted/50 border border-subtle/50">
+        <Lock className="w-3 h-3" />
+        Locked
+      </span>
+    );
+  }
+
+  if (isCompleted) {
+    return (
+      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-foreground text-surface">
+        Completed
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium border border-subtle text-foreground">
+      In progress
+    </span>
   );
 }
 
