@@ -61,32 +61,32 @@ export async function GET() {
       },
     });
 
-    const cardsSeen = allStates.filter((s) => s.attemptsCount > 0).length;
+    const cardsSeen = allStates.filter((s: { attemptsCount: number }) => s.attemptsCount > 0).length;
     
     // cardsUnseen = cards without a state OR with attemptsCount = 0
-    const cardsWithStateIds = new Set(allStates.map((s) => s.cardId));
+    const cardsWithStateIds = new Set(allStates.map((s: { cardId: number }) => s.cardId));
     const cardsWithoutState = cardsTotal - cardsWithStateIds.size;
     const cardsWithStateButUnseen = allStates.filter(
-      (s) => s.attemptsCount === 0
+      (s: { attemptsCount: number }) => s.attemptsCount === 0
     ).length;
     const cardsUnseen = cardsWithoutState + cardsWithStateButUnseen;
 
-    const attemptsTotal = allStates.reduce((sum, s) => sum + s.attemptsCount, 0);
-    const correctTotal = allStates.reduce((sum, s) => sum + s.correctCount, 0);
+    const attemptsTotal = allStates.reduce((sum: number, s: { attemptsCount: number }) => sum + s.attemptsCount, 0);
+    const correctTotal = allStates.reduce((sum: number, s: { correctCount: number }) => sum + s.correctCount, 0);
     const accuracyOverall =
       attemptsTotal > 0 ? correctTotal / attemptsTotal : 0;
 
     // b) SRS
-    const dueNow = allStates.filter((s) => s.dueAt <= now).length;
+    const dueNow = allStates.filter((s: { dueAt: Date }) => s.dueAt <= now).length;
     const overdue = allStates.filter(
-      (s) => s.dueAt < now && s.attemptsCount > 0
+      (s: { dueAt: Date; attemptsCount: number }) => s.dueAt < now && s.attemptsCount > 0
     ).length;
-    const dueToday = allStates.filter((s) => s.dueAt <= endOfToday).length;
+    const dueToday = allStates.filter((s: { dueAt: Date }) => s.dueAt <= endOfToday).length;
 
-    const statesWithAttempts = allStates.filter((s) => s.attemptsCount > 0);
+    const statesWithAttempts = allStates.filter((s: { attemptsCount: number }) => s.attemptsCount > 0);
     const averageIntervalDays =
       statesWithAttempts.length > 0
-        ? statesWithAttempts.reduce((sum, s) => sum + s.intervalDays, 0) /
+        ? statesWithAttempts.reduce((sum: number, s: { intervalDays: number }) => sum + s.intervalDays, 0) /
           statesWithAttempts.length
         : 0;
     const averageEaseFactor =

@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db";
  * - attemptsCount >= 3
  * - correctCount / attemptsCount >= 0.7 (70% accuracy)
  */
-function isCardMastered(
+export function isCardMastered(
   attemptsCount: number,
   correctCount: number
 ): boolean {
@@ -22,21 +22,32 @@ function isCardMastered(
 }
 
 /**
- * Computes progress and completion status for a milestone based on its cards.
- * Returns { progress: number, isCompleted: boolean }
+ * Computes progress, completion status, and card counts for a milestone based on its cards.
+ * Returns { progress: number, isCompleted: boolean, totalCards: number, seenCards: number, masteredCards: number }
  */
 async function computeMilestoneProgress(milestoneKey: string): Promise<{
   progress: number;
   isCompleted: boolean;
+  totalCards: number;
+  seenCards: number;
+  masteredCards: number;
 }> {
   // Get all CardTemplates for this milestone
   const templates = await prisma.cardTemplate.findMany({
     where: { milestoneKey },
   });
 
+  const totalCards = templates.length;
+
   // If no templates, return 0 progress and not completed
-  if (templates.length === 0) {
-    return { progress: 0.0, isCompleted: false };
+  if (totalCards === 0) {
+    return {
+      progress: 0.0,
+      isCompleted: false,
+      totalCards: 0,
+      seenCards: 0,
+      masteredCards: 0,
+    };
   }
 
   // Get CardStates for all templates
@@ -48,28 +59,41 @@ async function computeMilestoneProgress(milestoneKey: string): Promise<{
   // Create a map of cardId -> CardState for quick lookup
   const stateMap = new Map(states.map((s) => [s.cardId, s]));
 
-  // Count mastered cards
-  let masteredCount = 0;
+  // Count seen and mastered cards
+  let seenCards = 0;
+  let masteredCards = 0;
+
   for (const template of templates) {
     const state = stateMap.get(template.id);
     if (state) {
+      // Card is seen if it has any attempts
+      if (state.attemptsCount > 0) {
+        seenCards++;
+      }
+      // Check if mastered
       const mastered = isCardMastered(
         state.attemptsCount,
         state.correctCount
       );
       if (mastered) {
-        masteredCount++;
+        masteredCards++;
       }
     }
   }
 
   // Calculate progress (0-1)
-  const rawProgress = masteredCount / templates.length;
+  const rawProgress = masteredCards / totalCards;
 
   // Determine completion (>= 85% mastered)
   const isCompleted = rawProgress >= 0.85;
 
-  return { progress: rawProgress, isCompleted };
+  return {
+    progress: rawProgress,
+    isCompleted,
+    totalCards,
+    seenCards,
+    masteredCards,
+  };
 }
 
 /**
@@ -78,8 +102,16 @@ async function computeMilestoneProgress(milestoneKey: string): Promise<{
  * - Sets isCompleted based on progress (>= 85%)
  * - Unlocks milestones based on previous milestone completion
  * - Persists all changes to the database
+ * - Returns card counts for each milestone
  */
-export async function updateMilestonesProgressAndUnlock(): Promise<void> {
+export async function updateMilestonesProgressAndUnlock(): Promise<
+  Array<{
+    id: number;
+    totalCards: number;
+    seenCards: number;
+    masteredCards: number;
+  }>
+> {
   try {
     // Fetch all milestones ordered by order ascending
     const milestones = await prisma.milestone.findMany({
@@ -87,24 +119,47 @@ export async function updateMilestonesProgressAndUnlock(): Promise<void> {
     });
 
     if (milestones.length === 0) {
-      return;
+      return [];
     }
 
-    // Step 1: Compute progress and completion for each milestone
+    // Step 1: Compute progress, completion, and card counts for each milestone
     const updates: Array<{
       id: number;
       progress: number;
       isCompleted: boolean;
+      totalCards: number;
+      seenCards: number;
+      masteredCards: number;
+    }> = [];
+
+    const cardCounts: Array<{
+      id: number;
+      totalCards: number;
+      seenCards: number;
+      masteredCards: number;
     }> = [];
 
     for (const milestone of milestones) {
-      const { progress, isCompleted } = await computeMilestoneProgress(
-        milestone.key
-      );
+      const {
+        progress,
+        isCompleted,
+        totalCards,
+        seenCards,
+        masteredCards,
+      } = await computeMilestoneProgress(milestone.key);
       updates.push({
         id: milestone.id,
         progress,
         isCompleted,
+        totalCards,
+        seenCards,
+        masteredCards,
+      });
+      cardCounts.push({
+        id: milestone.id,
+        totalCards,
+        seenCards,
+        masteredCards,
       });
     }
 
@@ -158,9 +213,62 @@ export async function updateMilestonesProgressAndUnlock(): Promise<void> {
         },
       });
     }
+
+    // Return card counts for API use
+    return cardCounts;
   } catch (error) {
     console.error("Error updating milestones progress and unlock:", error);
     throw error;
   }
+}
+
+/**
+ * Gets detailed progress statistics for a milestone.
+ * Returns { totalCards, cardsSeen, cardsMastered }
+ */
+export async function getMilestoneProgressStats(milestoneKey: string): Promise<{
+  totalCards: number;
+  cardsSeen: number;
+  cardsMastered: number;
+}> {
+  // Get all CardTemplates for this milestone
+  const templates = await prisma.cardTemplate.findMany({
+    where: { milestoneKey },
+  });
+
+  const totalCards = templates.length;
+
+  if (totalCards === 0) {
+    return { totalCards: 0, cardsSeen: 0, cardsMastered: 0 };
+  }
+
+  // Get CardStates for all templates
+  const templateIds = templates.map((t) => t.id);
+  const states = await prisma.cardState.findMany({
+    where: { cardId: { in: templateIds } },
+  });
+
+  // Create a map of cardId -> CardState for quick lookup
+  const stateMap = new Map(states.map((s) => [s.cardId, s]));
+
+  // Count seen and mastered cards
+  let cardsSeen = 0;
+  let cardsMastered = 0;
+
+  for (const template of templates) {
+    const state = stateMap.get(template.id);
+    if (state) {
+      // Card is seen if it has any attempts
+      if (state.attemptsCount > 0) {
+        cardsSeen++;
+      }
+      // Check if mastered
+      if (isCardMastered(state.attemptsCount, state.correctCount)) {
+        cardsMastered++;
+      }
+    }
+  }
+
+  return { totalCards, cardsSeen, cardsMastered };
 }
 
