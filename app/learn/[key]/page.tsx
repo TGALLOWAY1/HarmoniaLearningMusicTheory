@@ -70,6 +70,42 @@ export default function MilestoneDetailPage() {
   // Safely access milestone and content with optional chaining
   const milestoneForScroll = milestones?.find((m) => m.key === milestoneKey);
   const contentForScroll = milestoneKey ? getMilestoneContent(milestoneKey) : null;
+  
+  // Calculate completion stats for skill modules (with state for updates)
+  // Must be before early returns to satisfy React hooks rules
+  const foundMilestone = milestones?.find((m) => m.key === milestoneKey);
+  const skillModules = milestoneKey ? getSkillModulesForMilestone(milestoneKey) : [];
+  const [completedCount, setCompletedCount] = useState(() =>
+    skillModules.filter((module) => isModuleCompleted(module.id)).length
+  );
+  
+  // Update completion count when modules complete
+  useEffect(() => {
+    if (!milestoneKey) return;
+    const updateCount = () => {
+      const modules = getSkillModulesForMilestone(milestoneKey);
+      setCompletedCount(
+        modules.filter((module) => isModuleCompleted(module.id)).length
+      );
+    };
+    
+    // Initial calculation
+    updateCount();
+    
+    // Listen for completion events
+    const handleCompletionEvent = (e: CustomEvent) => {
+      if (e.detail?.moduleId) {
+        updateCount();
+      }
+    };
+    
+    window.addEventListener("skillModuleCompleted", handleCompletionEvent as EventListener);
+    
+    return () => {
+      window.removeEventListener("skillModuleCompleted", handleCompletionEvent as EventListener);
+    };
+  }, [milestoneKey]);
+  
   useEffect(() => {
     if (!milestoneForScroll?.isUnlocked || !contentForScroll || !contentForScroll.sections || contentForScroll.sections.length === 0) {
       return;
@@ -145,8 +181,6 @@ export default function MilestoneDetailPage() {
       </main>
     );
   }
-
-  const foundMilestone = milestones.find((m) => m.key === milestoneKey);
 
   if (!foundMilestone) {
     return (
@@ -237,38 +271,8 @@ export default function MilestoneDetailPage() {
   // Unlocked state
   const progressPercent = Math.round(milestone.progress * 100);
   const content = getMilestoneContent(milestoneKey);
-  const skillModules = getSkillModulesForMilestone(milestoneKey);
   
-  // Calculate completion stats for skill modules (with state for updates)
-  const [completedCount, setCompletedCount] = useState(() =>
-    skillModules.filter((module) => isModuleCompleted(module.id)).length
-  );
-  
-  // Update completion count when modules complete
-  useEffect(() => {
-    const updateCount = () => {
-      const modules = getSkillModulesForMilestone(milestoneKey);
-      setCompletedCount(
-        modules.filter((module) => isModuleCompleted(module.id)).length
-      );
-    };
-    
-    // Initial calculation
-    updateCount();
-    
-    // Listen for completion events
-    const handleCompletionEvent = () => {
-      updateCount();
-    };
-    
-    window.addEventListener("skillModuleCompleted", handleCompletionEvent);
-    window.addEventListener("storage", handleCompletionEvent);
-    
-    return () => {
-      window.removeEventListener("skillModuleCompleted", handleCompletionEvent);
-      window.removeEventListener("storage", handleCompletionEvent);
-    };
-  }, [milestoneKey]);
+  // Note: completedCount state is already initialized above before early returns
 
   return (
     <main className="min-h-screen bg-background text-foreground">

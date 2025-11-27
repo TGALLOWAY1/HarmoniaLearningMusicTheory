@@ -4,6 +4,7 @@ import {
   formatChordSymbol,
   type PitchClass,
   type ScaleType,
+  type ChordQuality,
 } from "@/lib/theory";
 
 type KeyType = "major" | "natural_minor";
@@ -126,9 +127,18 @@ export async function GET(request: Request) {
     } else {
       // extensions === "sevenths"
       for (const diatonicSeventh of diatonicSet.sevenths) {
+        // Map SeventhQuality to ChordQuality for formatChordSymbol
+        const qualityMap: Record<string, ChordQuality> = {
+          maj7: "maj7",
+          min7: "min7",
+          dom7: "dom7",
+          "half-dim7": "min7", // Approximate as min7 for display
+          dim7: "min7", // Approximate as min7 for display
+        };
+        const chordQuality = qualityMap[diatonicSeventh.seventh.quality] || "min7";
         const symbol = formatChordSymbol(
           diatonicSeventh.seventh.root,
-          diatonicSeventh.seventh.quality
+          chordQuality
         );
         chords.push({
           degree: diatonicSeventh.degree,
