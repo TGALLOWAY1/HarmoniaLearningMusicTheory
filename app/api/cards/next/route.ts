@@ -3,13 +3,25 @@ import { prisma } from "@/lib/db";
 
 export async function GET(request: Request) {
   try {
-    // Parse milestoneKey query parameter
+    // Parse query parameters
     const url = new URL(request.url);
     const milestoneKey = url.searchParams.get("milestoneKey");
+    const cardKind = url.searchParams.get("cardKind");
+    const scaleType = url.searchParams.get("scaleType");
+    const difficulty = url.searchParams.get("difficulty"); // "easy" | "all"
 
-    // 1) Fetch all templates (optionally filtered by milestoneKey)
+    // Build where clause
+    const whereClause: any = {};
+    if (milestoneKey) {
+      whereClause.milestoneKey = milestoneKey;
+    }
+    if (cardKind) {
+      whereClause.kind = cardKind;
+    }
+
+    // 1) Fetch all templates (optionally filtered)
     const templates = await prisma.cardTemplate.findMany({
-      ...(milestoneKey && { where: { milestoneKey } }),
+      where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
     });
 
     // If milestoneKey was provided but no templates match, return 404
@@ -24,8 +36,25 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "No cards available" }, { status: 404 });
     }
 
-    // 2) Ensure CardState exists for each template
-    const templateIds = templates.map((t: { id: number }) => t.id);
+    // 2) Filter by scale type if specified (requires checking meta field)
+    let filteredTemplates = templates;
+    if (scaleType) {
+      filteredTemplates = templates.filter((t) => {
+        if (!t.meta || typeof t.meta !== "object") return false;
+        const meta = t.meta as any;
+        return meta.type === scaleType;
+      });
+    }
+
+    if (filteredTemplates.length === 0) {
+      return NextResponse.json(
+        { error: "No cards match the selected filters." },
+        { status: 404 }
+      );
+    }
+
+    // 3) Ensure CardState exists for each filtered template
+    const templateIds = filteredTemplates.map((t: { id: number }) => t.id);
 
     const existingStates = await prisma.cardState.findMany({
       where: { cardId: { in: templateIds } },
@@ -41,10 +70,39 @@ export async function GET(request: Request) {
       });
     }
 
-    // 3) Re-fetch states (or update the map) since new ones may have been created
+    // 4) Filter by difficulty if specified
+    if (difficulty === "easy") {
+      // Get states for these templates to filter by mastery
+      const statesForDifficulty = await prisma.cardState.findMany({
+        where: { cardId: { in: templateIds } },
+      });
+      const stateMap = new Map(statesForDifficulty.map((s) => [s.cardId, s]));
+
+      // Filter to cards that are either:
+      // - Not attempted yet (attemptsCount === 0)
+      // - Have high accuracy (correctCount / attemptsCount >= 0.7) and attemptsCount >= 3
+      filteredTemplates = filteredTemplates.filter((t) => {
+        const state = stateMap.get(t.id);
+        if (!state) return true; // Not attempted = easy
+        if (state.attemptsCount === 0) return true;
+        if (state.attemptsCount < 3) return false;
+        const accuracy = state.correctCount / state.attemptsCount;
+        return accuracy >= 0.7;
+      });
+
+      if (filteredTemplates.length === 0) {
+        return NextResponse.json(
+          { error: "No easy cards found. Try practicing more cards first!" },
+          { status: 404 }
+        );
+      }
+    }
+
+    // 5) Re-fetch states (or update the map) since new ones may have been created
     // Order by dueAt ascending to prioritize earliest due dates
+    const filteredTemplateIds = filteredTemplates.map((t) => t.id);
     const allStates = await prisma.cardState.findMany({
-      where: { cardId: { in: templateIds } },
+      where: { cardId: { in: filteredTemplateIds } },
       orderBy: [{ dueAt: "asc" }],
     });
 
@@ -52,9 +110,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "No card state found" }, { status: 500 });
     }
 
-    // 4) Partition cards: due cards (dueAt <= now) vs future cards
+    // 6) Partition cards: due cards (dueAt <= now) vs future cards
     const now = new Date();
-    const dueCards = allStates.filter((s: { dueAt: Date }) => s.dueAt <= now);
+    const dueCards = allStates.filter((s: { dueAt: Date | string }) => {
+      const dueDate = s.dueAt instanceof Date ? s.dueAt : new Date(s.dueAt);
+      return dueDate <= now;
+    });
 
     let nextState: (typeof allStates)[0];
 
@@ -65,12 +126,14 @@ export async function GET(request: Request) {
     } else {
       // No due cards, find earliest future due date
       const firstDue = allStates[0].dueAt;
-      const firstDueTime = firstDue.getTime();
+      const firstDueDate = firstDue instanceof Date ? firstDue : new Date(firstDue);
+      const firstDueTime = firstDueDate.getTime();
 
       // Find all cards with the same earliest due date
-      const futureWithSameDue = allStates.filter(
-        (s: { dueAt: Date }) => s.dueAt.getTime() === firstDueTime
-      );
+      const futureWithSameDue = allStates.filter((s: { dueAt: Date | string }) => {
+        const dueDate = s.dueAt instanceof Date ? s.dueAt : new Date(s.dueAt);
+        return dueDate.getTime() === firstDueTime;
+      });
 
       // Randomly select among cards with the same earliest due date
       const randomIndex = Math.floor(Math.random() * futureWithSameDue.length);
@@ -81,7 +144,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "No card state found" }, { status: 500 });
     }
 
-    const nextTemplate = templates.find((t: { id: number }) => t.id === nextState.cardId);
+    const nextTemplate = filteredTemplates.find((t: { id: number }) => t.id === nextState.cardId);
 
     if (!nextTemplate) {
       return NextResponse.json({ error: "Card state mismatch" }, { status: 500 });

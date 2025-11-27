@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import { Flashcard } from "@/components/flashcards/Flashcard";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { FlashcardRenderer } from "@/components/practice/FlashcardRenderer";
+import { Filter, X } from "lucide-react";
 
 type LoadedCard = {
   id: number;
@@ -15,7 +16,11 @@ type LoadedCard = {
 
 export default function PracticePage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const milestone = searchParams.get("milestone");
+  const cardKindParam = searchParams.get("cardKind");
+  const scaleTypeParam = searchParams.get("scaleType");
+  const difficultyParam = searchParams.get("difficulty");
 
   const [card, setCard] = useState<LoadedCard | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -23,8 +28,14 @@ export default function PracticePage() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
-  async function fetchNextCard() {
+  // Filter state
+  const [cardKind, setCardKind] = useState<string>(cardKindParam || "");
+  const [scaleType, setScaleType] = useState<string>(scaleTypeParam || "");
+  const [difficulty, setDifficulty] = useState<string>(difficultyParam || "all");
+
+  const fetchNextCard = useCallback(async () => {
     setLoading(true);
     setError(null);
     setSelectedIndex(null);
@@ -32,21 +43,35 @@ export default function PracticePage() {
 
     try {
       const base = "/api/cards/next";
-      const url = milestone
-        ? `${base}?milestoneKey=${encodeURIComponent(milestone)}`
-        : base;
+      const params = new URLSearchParams();
+      if (milestone) params.set("milestoneKey", milestone);
+      if (cardKind) params.set("cardKind", cardKind);
+      if (scaleType) params.set("scaleType", scaleType);
+      if (difficulty && difficulty !== "all") params.set("difficulty", difficulty);
+      const url = params.toString() ? `${base}?${params.toString()}` : base;
 
       const res = await fetch(url);
       if (!res.ok) {
-        if (res.status === 404) {
-          const errorData = await res.json().catch(() => ({}));
-          if (errorData.error?.includes("milestoneKey")) {
-            throw new Error("No cards found for this milestone yet.");
+        let errorMessage = "Failed to fetch next card";
+        try {
+          const errorData = await res.json();
+          if (errorData.error) {
+            errorMessage = errorData.error;
+            if (res.status === 404 && errorData.error.includes("milestoneKey")) {
+              errorMessage = "No cards found for this milestone yet.";
+            }
           }
+        } catch {
+          // If JSON parsing fails, use default message
         }
-        throw new Error("Failed to fetch next card");
+        throw new Error(errorMessage);
       }
       const data = await res.json();
+      
+      // Validate response structure
+      if (!data.card || !data.card.id || !data.card.question || !Array.isArray(data.card.options)) {
+        throw new Error("Invalid card data received from server");
+      }
       setCard({
         id: data.card.id,
         question: data.card.question,
@@ -60,11 +85,36 @@ export default function PracticePage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [milestone, cardKind, scaleType, difficulty]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (milestone) params.set("milestone", milestone);
+    if (cardKind) params.set("cardKind", cardKind);
+    if (scaleType) params.set("scaleType", scaleType);
+    if (difficulty && difficulty !== "all") params.set("difficulty", difficulty);
+    const newUrl = params.toString() ? `/practice?${params.toString()}` : "/practice";
+    router.replace(newUrl, { scroll: false });
+  }, [cardKind, scaleType, difficulty, milestone, router]);
+
+  const handleFilterChange = (filterType: string, value: string) => {
+    if (filterType === "cardKind") setCardKind(value);
+    else if (filterType === "scaleType") setScaleType(value);
+    else if (filterType === "difficulty") setDifficulty(value);
+  };
+
+  const clearFilters = () => {
+    setCardKind("");
+    setScaleType("");
+    setDifficulty("all");
+  };
+
+  const hasActiveFilters = cardKind || scaleType || (difficulty && difficulty !== "all");
 
   useEffect(() => {
     fetchNextCard();
-  }, [milestone]);
+  }, [fetchNextCard]);
 
   async function handleSelectOption(index: number) {
     setSelectedIndex(index);
@@ -119,12 +169,120 @@ export default function PracticePage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center px-6 py-10">
-        <header className="mb-6 text-center">
-          <p className="text-xs text-muted">Practice</p>
+        <header className="mb-6 text-center w-full">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted">Practice</p>
+            <button
+              type="button"
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-subtle bg-surface px-3 py-1 text-xs font-medium text-foreground hover:bg-surface-muted transition"
+            >
+              <Filter className="w-3.5 h-3.5" />
+              Filters
+              {hasActiveFilters && (
+                <span className="ml-1 rounded-full bg-emerald-500 text-white text-[10px] px-1.5 py-0.5">
+                  {[cardKind, scaleType, difficulty !== "all" ? difficulty : null].filter(Boolean).length}
+                </span>
+              )}
+            </button>
+          </div>
           <h1 className="text-2xl font-light tracking-tight text-foreground">
             Chords & scales flashcards
           </h1>
         </header>
+
+        {showFilters && (
+          <div className="w-full max-w-2xl mb-6 p-4 rounded-xl border border-subtle bg-surface shadow-sm space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium text-foreground">Filter Practice</h2>
+              <div className="flex items-center gap-2">
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="text-xs text-muted hover:text-foreground flex items-center gap-1 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                    Clear all
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowFilters(false)}
+                  className="text-xs text-muted hover:text-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Card Kind Filter */}
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1.5">
+                  Card Type
+                </label>
+                <select
+                  value={cardKind}
+                  onChange={(e) => handleFilterChange("cardKind", e.target.value)}
+                  className="w-full rounded-lg border border-subtle bg-surface-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                >
+                  <option value="">All types</option>
+                  <option value="scale_spelling">Scale Spelling</option>
+                  <option value="diatonic_chord_id">Diatonic Chord ID</option>
+                  <option value="degree_to_chord">Degree to Chord</option>
+                  <option value="chord_to_degree">Chord to Degree</option>
+                  <option value="progression_prediction">Progression Prediction</option>
+                  <option value="mode_character">Mode Character</option>
+                  <option value="notes_from_chord">Notes from Chord</option>
+                  <option value="chord_from_notes">Chord from Notes</option>
+                </select>
+              </div>
+
+              {/* Scale Type Filter */}
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1.5">
+                  Scale Type
+                </label>
+                <select
+                  value={scaleType}
+                  onChange={(e) => handleFilterChange("scaleType", e.target.value)}
+                  className="w-full rounded-lg border border-subtle bg-surface-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                >
+                  <option value="">All scales</option>
+                  <option value="major">Major</option>
+                  <option value="natural_minor">Natural Minor</option>
+                  <option value="dorian">Dorian</option>
+                  <option value="mixolydian">Mixolydian</option>
+                  <option value="phrygian">Phrygian</option>
+                </select>
+              </div>
+
+              {/* Difficulty Filter */}
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1.5">
+                  Difficulty
+                </label>
+                <select
+                  value={difficulty}
+                  onChange={(e) => handleFilterChange("difficulty", e.target.value)}
+                  className="w-full rounded-lg border border-subtle bg-surface-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                >
+                  <option value="all">All cards</option>
+                  <option value="easy">Easy only</option>
+                </select>
+              </div>
+            </div>
+
+            {hasActiveFilters && (
+              <div className="pt-2 border-t border-subtle">
+                <p className="text-xs text-muted">
+                  Filters are active. Cards will update automatically.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {loading && (
           <div className="text-center text-muted">
@@ -147,7 +305,7 @@ export default function PracticePage() {
 
         {card && !loading && !error && (
           <>
-            <Flashcard
+            <FlashcardRenderer
               question={card.question}
               options={card.options.map((label, index) => ({ index, label }))}
               selectedIndex={selectedIndex}

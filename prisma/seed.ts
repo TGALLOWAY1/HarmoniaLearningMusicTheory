@@ -1,6 +1,27 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../lib/db";
+import {
+  generateScaleSpellingTemplates,
+  generateDiatonicChordIdTemplates,
+  generateDegreeToChordTemplates,
+  generateChordToDegreeTemplates,
+  generateModeCharacterTemplates,
+  generateProgressionPredictionTemplates,
+  type CardTemplateSeed,
+} from "../lib/cards/generators/advancedGenerators";
+import {
+  getScaleDefinition,
+  getDiatonicChords,
+} from "../lib/theory";
+import type { PitchClass } from "../lib/theory/midiUtils";
+import type {
+  ScaleSpellingMeta,
+  DiatonicChordIdMeta,
+  DegreeToChordMeta,
+  ChordToDegreeMeta,
+  ModeCharacterMeta,
+  ProgressionPredictionMeta,
+  TensionSelectionMeta,
+} from "../lib/cards/advancedCardMeta";
 
 async function main() {
   // Remove existing data for idempotency in dev
@@ -259,6 +280,338 @@ async function main() {
       create: milestone,
     });
   }
+
+  // Generate and seed advanced flashcard cards
+  await seedAdvancedCards();
+}
+
+/**
+ * Generate options for a card template seed based on its kind and meta
+ */
+function generateOptionsForSeed(seed: CardTemplateSeed): {
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  correctIndex: number;
+} {
+  const allPitchClasses: PitchClass[] = [
+    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
+  ];
+
+  if (seed.kind === "scale_spelling") {
+    const meta = seed.meta as ScaleSpellingMeta;
+    const scale = getScaleDefinition(meta.root, meta.type);
+    const correctNotes = scale.pitchClasses;
+    const formatNotes = (notes: PitchClass[]) => notes.join(" – ");
+
+    // Option 1: Correct scale
+    const correct = formatNotes(correctNotes);
+
+    // Option 2: Shifted scale (one semitone up)
+    const shifted = correctNotes.map((pc) => {
+      const idx = allPitchClasses.indexOf(pc);
+      return allPitchClasses[(idx + 1) % 12];
+    });
+
+    // Option 3: Major if minor, minor if major
+    let swapped: PitchClass[];
+    if (meta.type === "major") {
+      swapped = getScaleDefinition(meta.root, "natural_minor").pitchClasses;
+    } else if (meta.type === "natural_minor") {
+      swapped = getScaleDefinition(meta.root, "major").pitchClasses;
+    } else {
+      swapped = getScaleDefinition(meta.root, "major").pitchClasses;
+    }
+
+    // Option 4: Missing one note
+    const missing = [...correctNotes];
+    missing.pop();
+    const wrongNote = allPitchClasses.find((p) => !missing.includes(p))!;
+    missing.push(wrongNote);
+
+    return {
+      optionA: correct,
+      optionB: formatNotes(shifted),
+      optionC: formatNotes(swapped),
+      optionD: formatNotes(missing),
+      correctIndex: 0,
+    };
+  }
+
+  if (seed.kind === "diatonic_chord_id") {
+    const meta = seed.meta as DiatonicChordIdMeta;
+    const diatonicSet = getDiatonicChords(meta.keyRoot, meta.keyType);
+    const allDegrees = diatonicSet.triads.map((t) => t.degree);
+    const correct = meta.degree;
+    const others = allDegrees.filter((d) => d !== correct);
+    const shuffled = [...others].sort((a, b) => a.localeCompare(b));
+    const options = [correct, ...shuffled.slice(0, 3)];
+
+    return {
+      optionA: options[0],
+      optionB: options[1],
+      optionC: options[2],
+      optionD: options[3],
+      correctIndex: 0,
+    };
+  }
+
+  if (seed.kind === "degree_to_chord") {
+    const meta = seed.meta as DegreeToChordMeta;
+    const diatonicSet = getDiatonicChords(meta.keyRoot, meta.keyType);
+    const allChords = diatonicSet.triads.map((t) => {
+      const qualityName = t.triad.quality === "maj" ? "major" : 
+                         t.triad.quality === "min" ? "minor" :
+                         t.triad.quality === "dim" ? "diminished" : "augmented";
+      return `${t.triad.root} ${qualityName}`;
+    });
+    const correct = meta.correctChord;
+    const others = allChords.filter((c) => c !== correct);
+    const shuffled = [...others].sort((a, b) => a.localeCompare(b));
+    const options = [correct, ...shuffled.slice(0, 3)];
+
+    return {
+      optionA: options[0],
+      optionB: options[1],
+      optionC: options[2],
+      optionD: options[3],
+      correctIndex: 0,
+    };
+  }
+
+  if (seed.kind === "chord_to_degree") {
+    const meta = seed.meta as ChordToDegreeMeta;
+    const diatonicSet = getDiatonicChords(meta.keyRoot, meta.keyType);
+    const allDegrees = diatonicSet.triads.map((t) => t.degree);
+    const correct = meta.correctDegree;
+    const others = allDegrees.filter((d) => d !== correct);
+    const shuffled = [...others].sort((a, b) => a.localeCompare(b));
+    const options = [correct, ...shuffled.slice(0, 3)];
+
+    return {
+      optionA: options[0],
+      optionB: options[1],
+      optionC: options[2],
+      optionD: options[3],
+      correctIndex: 0,
+    };
+  }
+
+  if (seed.kind === "mode_character") {
+    const meta = seed.meta as ModeCharacterMeta;
+    const characteristics = [
+      "Raised 6th",
+      "Lowered 7th",
+      "Lowered 2nd",
+      "Raised 4th",
+      "Lowered 3rd",
+    ];
+    const correct = meta.characteristic;
+    const others = characteristics.filter((c) => c !== correct);
+    const shuffled = [...others].sort((a, b) => a.localeCompare(b));
+    const options = [correct, ...shuffled.slice(0, 3)];
+
+    return {
+      optionA: options[0],
+      optionB: options[1],
+      optionC: options[2],
+      optionD: options[3],
+      correctIndex: 0,
+    };
+  }
+
+  if (seed.kind === "progression_prediction") {
+    const meta = seed.meta as ProgressionPredictionMeta;
+    const diatonicSet = getDiatonicChords(meta.keyRoot, meta.keyType);
+    const allDegrees = diatonicSet.triads.map((t) => t.degree);
+    const correct = meta.correctNext;
+    const others = allDegrees.filter((d) => d !== correct);
+    const shuffled = [...others].sort((a, b) => a.localeCompare(b));
+    const options = [correct, ...shuffled.slice(0, 3)];
+
+    return {
+      optionA: options[0],
+      optionB: options[1],
+      optionC: options[2],
+      optionD: options[3],
+      correctIndex: 0,
+    };
+  }
+
+  if (seed.kind === "tension_selection") {
+    const meta = seed.meta as TensionSelectionMeta;
+    const tensions = ["9th", "11th", "13th", "b9", "#11", "b13"];
+    const correct = meta.correctTension;
+    const others = tensions.filter((t) => t !== correct);
+    const shuffled = [...others].sort((a, b) => a.localeCompare(b));
+    const options = [correct, ...shuffled.slice(0, 3)];
+
+    return {
+      optionA: options[0],
+      optionB: options[1],
+      optionC: options[2],
+      optionD: options[3],
+      correctIndex: 0,
+    };
+  }
+
+  // Fallback (shouldn't happen)
+  return {
+    optionA: "Option A",
+    optionB: "Option B",
+    optionC: "Option C",
+    optionD: "Option D",
+    correctIndex: 0,
+  };
+}
+
+/**
+ * Generate a slug from a card template seed
+ */
+function generateSlug(seed: CardTemplateSeed, index: number): string {
+  const base = seed.kind.replace(/_/g, "-");
+  if (seed.kind === "scale_spelling") {
+    const meta = seed.meta as ScaleSpellingMeta;
+    return `${base}-${meta.root.toLowerCase()}-${meta.type}-${index}`;
+  }
+  if (seed.kind === "diatonic_chord_id") {
+    const meta = seed.meta as DiatonicChordIdMeta;
+    return `${base}-${meta.keyRoot.toLowerCase()}-${meta.keyType}-${meta.degree.toLowerCase()}-${index}`;
+  }
+  if (seed.kind === "degree_to_chord") {
+    const meta = seed.meta as DegreeToChordMeta;
+    return `${base}-${meta.keyRoot.toLowerCase()}-${meta.degree.toLowerCase()}-${index}`;
+  }
+  if (seed.kind === "chord_to_degree") {
+    const meta = seed.meta as ChordToDegreeMeta;
+    const chordSlug = meta.chord.toLowerCase().replace(/\s+/g, "-");
+    return `${base}-${meta.keyRoot.toLowerCase()}-${chordSlug}-${index}`;
+  }
+  if (seed.kind === "mode_character") {
+    const meta = seed.meta as ModeCharacterMeta;
+    return `${base}-${meta.mode}-${meta.root.toLowerCase()}-${index}`;
+  }
+  if (seed.kind === "progression_prediction") {
+    const meta = seed.meta as ProgressionPredictionMeta;
+    const progSlug = meta.currentChords.join("-").toLowerCase();
+    return `${base}-${meta.keyRoot.toLowerCase()}-${progSlug}-${index}`;
+  }
+  if (seed.kind === "tension_selection") {
+    const meta = seed.meta as TensionSelectionMeta;
+    const chordSlug = meta.chord.toLowerCase().replace(/\s+/g, "-");
+    return `${base}-${meta.keyRoot.toLowerCase()}-${chordSlug}-${index}`;
+  }
+  return `${base}-${index}`;
+}
+
+/**
+ * Seed advanced flashcard cards for each milestone
+ */
+async function seedAdvancedCards() {
+  // FOUNDATION → scale_spelling (only major)
+  const foundationCards = generateScaleSpellingTemplates().filter(
+    (card) => {
+      if (card.kind !== "scale_spelling") return false;
+      const meta = card.meta as ScaleSpellingMeta;
+      return card.milestoneKey === "FOUNDATION" && meta.type === "major";
+    }
+  );
+
+  // NATURAL_MINOR → scale_spelling (minor + modes)
+  const naturalMinorCards = generateScaleSpellingTemplates().filter(
+    (card) => {
+      if (card.kind !== "scale_spelling") return false;
+      const meta = card.meta as ScaleSpellingMeta;
+      return (
+        card.milestoneKey === "NATURAL_MINOR" &&
+        (meta.type === "natural_minor" ||
+          meta.type === "dorian" ||
+          meta.type === "mixolydian" ||
+          meta.type === "phrygian")
+      );
+    }
+  );
+
+  // TRIADS → diatonic_chord_id (triads only - use simpler keys)
+  const triadCards = generateDiatonicChordIdTemplates().filter(
+    (card) => {
+      if (card.kind !== "diatonic_chord_id") return false;
+      const meta = card.meta as DiatonicChordIdMeta;
+      return (
+        card.milestoneKey === "DIATONIC_TRIADS" &&
+        ["C", "G", "F", "D", "A", "E"].includes(meta.keyRoot)
+      );
+    }
+  );
+
+  // DIATONIC_TRIADS → diatonic_chord_id + degree_to_chord
+  const diatonicTriadCards = [
+    ...generateDiatonicChordIdTemplates().filter(
+      (card) => card.milestoneKey === "DIATONIC_TRIADS"
+    ),
+    ...generateDegreeToChordTemplates().filter(
+      (card) => card.milestoneKey === "DIATONIC_TRIADS"
+    ),
+  ];
+
+  // CIRCLE_OF_FIFTHS → progression_prediction (keep existing circle cards)
+  const circleCards = generateProgressionPredictionTemplates().filter(
+    (card) => card.milestoneKey === "DIATONIC_TRIADS"
+  );
+
+  // SEVENTH_CHORDS → chord_to_degree
+  const seventhChordCards = generateChordToDegreeTemplates().filter(
+    (card) => card.milestoneKey === "DIATONIC_TRIADS"
+  );
+
+  // MODES → mode_character
+  const modeCards = generateModeCharacterTemplates().filter(
+    (card) => card.milestoneKey === "MODES"
+  );
+
+  // Combine all cards with their milestone assignments
+  const allAdvancedCards: Array<{ seed: CardTemplateSeed; milestoneKey: string }> = [
+    ...foundationCards.map((seed) => ({ seed, milestoneKey: "FOUNDATION" })),
+    ...naturalMinorCards.map((seed) => ({ seed, milestoneKey: "NATURAL_MINOR" })),
+    ...triadCards.map((seed) => ({ seed, milestoneKey: "TRIADS" })),
+    ...diatonicTriadCards.map((seed) => ({ seed, milestoneKey: "DIATONIC_TRIADS" })),
+    ...circleCards.map((seed) => ({ seed, milestoneKey: "CIRCLE_OF_FIFTHS" })),
+    ...seventhChordCards.map((seed) => ({ seed, milestoneKey: "SEVENTH_CHORDS" })),
+    ...modeCards.map((seed) => ({ seed, milestoneKey: "MODES" })),
+  ];
+
+  // Insert cards into database
+  let cardIndex = 0;
+  for (const { seed, milestoneKey } of allAdvancedCards) {
+    const options = generateOptionsForSeed(seed);
+    const slug = generateSlug(seed, cardIndex);
+
+    try {
+      await prisma.cardTemplate.create({
+        data: {
+          slug,
+          kind: seed.kind,
+          question: seed.prompt,
+          optionA: options.optionA,
+          optionB: options.optionB,
+          optionC: options.optionC,
+          optionD: options.optionD,
+          correctIndex: options.correctIndex,
+          meta: seed.meta as any,
+          milestoneKey,
+        },
+      });
+      cardIndex++;
+    } catch (error: any) {
+      // Skip if slug already exists (for idempotency)
+      if (error.code !== "P2002") {
+        console.error(`Error creating card ${slug}:`, error);
+      }
+    }
+  }
+
+  console.log(`Seeded ${cardIndex} advanced flashcard cards`);
 }
 
 main()
