@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { Breadcrumb } from "@/components/navigation/Breadcrumb";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export default function RootLayout({
         className={`${GeistSans.variable} ${GeistMono.variable} bg-background text-foreground font-sans antialiased min-h-screen`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Breadcrumb />
           {children}
         </div>
       </body>
