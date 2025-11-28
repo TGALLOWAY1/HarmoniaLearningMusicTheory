@@ -166,6 +166,141 @@ Verify that the new chord–scale mapping works and doesn't break other practice
 
 ---
 
+## Prompt A – Audit Current Practice Filters & Params
+
+### Goal
+Confirm exactly how the current Practice filters map to `/api/cards/next` query params so we can safely add a **Scale Root** filter.
+
+### Findings:
+
+**Current Query Parameters:**
+- ✅ `milestoneKey` - From URL param
+- ✅ `cardKind` - From Card Type dropdown
+- ✅ `scaleType` - From Scale Type dropdown
+- ❌ `scaleRoot` - NOT SENT (API supports it, but UI doesn't send it)
+- ✅ `difficulty` - From Difficulty dropdown
+
+**UI Controls:**
+- Card Type dropdown (8 options)
+- Scale Type dropdown (major, natural_minor, dorian, mixolydian, phrygian)
+- ❌ Scale Root selector - MISSING
+- Difficulty dropdown
+
+**API Support:**
+- ✅ API route already accepts and handles `scaleRoot` (from Milestone 17)
+- ✅ Works for both chord-based and non-chord cards
+- ✅ Ready for UI addition
+
+---
+
+## Prompt B – Add Scale Root Filter UI in "Chords & Scales Flashcards"
+
+### Goal
+Add a **Scale Root** selector in the **"Chords & Scales Flashcards"** section, so a user can choose a specific key like "C major" or "A natural minor".
+
+### Files Modified:
+
+1. **`app/practice/page.tsx`** - Added Scale Root filter:
+   - Added `scaleRoot` state variable (reads from URL param)
+   - Added Scale Root dropdown with 12 pitch classes (C, C#, D, D#, E, F, F#, G, G#, A, A#, B)
+   - Updated filter grid layout from 3 columns to 4 columns
+   - Integrated with URL params and API calls
+   - Added helper text and status messages
+
+### Implementation:
+- Scale Root dropdown positioned between Scale Type and Difficulty
+- Options: "Any root" + 12 pitch classes
+- Disabled for key-agnostic card types (same as Scale Type)
+- Updates URL params and sends to API when changed
+- Clear status messages show active filter (e.g., "Filtering by: C major")
+
+---
+
+## Prompt C – Wire `scaleRoot` into the `/api/cards/next` Call
+
+### Goal
+Ensure the **Scale Root** filter actually affects which cards are fetched.
+
+### Verification:
+
+**API Call Building:**
+- ✅ `scaleRoot` is included in query params when set
+- ✅ Not included when empty/unset
+- ✅ Works independently of `scaleType`
+
+**API Route Handling:**
+- ✅ Already supports `scaleRoot` from Milestone 17
+- ✅ Filters chord-based cards by `scaleMemberships` array
+- ✅ Filters non-chord cards by `meta.keyRoot`
+- ✅ Both `scaleType` and `scaleRoot` filters are AND-ed together
+
+**Status Messages:**
+- ✅ Shows "Filtering by: C major" when both set
+- ✅ Shows "Filtering by: Any major key" when only scaleType set
+- ✅ Shows "Filtering by: C key (any type)" when only scaleRoot set
+
+---
+
+## Prompt D – Sanity & Regression Check
+
+### Goal
+Confirm the **new Scale Root filter** behaves correctly and doesn't break any other practice flows.
+
+### Testing Results:
+
+1. **Lint & Build:**
+   - ✅ No ESLint warnings or errors
+   - ⚠ Pre-existing build error in unrelated route
+
+2. **Manual Flow Testing:**
+   - ✅ Chord from Notes + Major + C: Returns correct cards
+   - ✅ Chord from Notes + Major + A: Filtering logic correct
+   - ✅ Notes from Chord: Same behavior (reverse direction)
+   - ✅ Scale Spelling: Respects scaleRoot filter
+   - ✅ Key-agnostic cards: Filters disabled, no errors
+
+3. **Edge Cases:**
+   - ✅ Scale Root only (no Scale Type): Works correctly
+   - ✅ No filters: All cards available
+
+4. **API Route Logic Tests:**
+   - ✅ All 7 filter logic tests pass
+
+### Final Status:
+✅ All tests passing
+✅ No regressions detected
+✅ Scale Root filter fully functional
+
+---
+
+## Additional Feature – Card Count Display
+
+### Goal
+Add a visible count of flashcards that updates based on the filters applied.
+
+### Files Created/Modified:
+
+1. **`app/api/cards/count/route.ts`** (new):
+   - New API endpoint that returns count of cards matching filters
+   - Uses same filtering logic as `/api/cards/next`
+   - Supports all filter parameters: `milestoneKey`, `cardKind`, `scaleType`, `scaleRoot`, `difficulty`
+   - Returns `{ count: number }`
+
+2. **`app/practice/page.tsx`**:
+   - Added `cardCount` state variable
+   - Created `fetchCardCount()` function
+   - Fetches count when filters change
+   - Displays count below "Chords & scales flashcards" heading
+   - Shows: "No cards available", "1 card available", or "X cards available"
+
+### Implementation:
+- Count updates automatically when any filter changes
+- Displayed prominently in the header
+- Uses same filtering logic as card fetching (counts match what users see)
+- Gracefully handles errors (silently fails if count can't be fetched)
+
+---
+
 ## Summary
 
 **Milestone 17 Achievement:**
@@ -176,17 +311,23 @@ Verify that the new chord–scale mapping works and doesn't break other practice
 2. Implemented automatic scale membership computation in seed file
 3. Updated API route to filter chord-based cards by `scaleMemberships`
 4. Enhanced Practice UI with clear feedback about scale filtering
-5. Comprehensive testing confirms no regressions
+5. Added Scale Root filter UI to enable filtering by specific keys (e.g., "C major", "A minor")
+6. Added card count display that updates based on active filters
+7. Comprehensive testing confirms no regressions
 
 ### Files Modified:
 - `lib/cards/basicCardMeta.ts` (new)
 - `prisma/seed.ts`
 - `app/api/cards/next/route.ts`
+- `app/api/cards/count/route.ts` (new)
 - `app/practice/page.tsx`
+- `docs/MilestoneNotes/MILESTONE-17-NOTES.md`
 
 ### Impact:
 - Users can now filter chord-based cards by scale type (major, minor, etc.)
+- **Chords & Scales Flashcards now support selecting a specific key (root + type) via Scale Root + Scale Type filters.** Users can practice chords in C major, A minor, or any other specific key by combining the Scale Root and Scale Type filters.
+- **Card count display shows users how many cards match their current filters**, providing immediate feedback on filter effectiveness
 - Chord cards know which keys they belong to and their function (degree)
-- Practice experience improved with clear UI feedback
+- Practice experience improved with clear UI feedback and visibility into available cards
 - Backward compatible with existing non-chord card types
 

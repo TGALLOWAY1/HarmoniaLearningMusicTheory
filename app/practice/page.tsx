@@ -20,6 +20,7 @@ export default function PracticePage() {
   const milestone = searchParams.get("milestone");
   const cardKindParam = searchParams.get("cardKind");
   const scaleTypeParam = searchParams.get("scaleType");
+  const scaleRootParam = searchParams.get("scaleRoot");
   const difficultyParam = searchParams.get("difficulty");
 
   const [card, setCard] = useState<LoadedCard | null>(null);
@@ -29,10 +30,12 @@ export default function PracticePage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [cardCount, setCardCount] = useState<number | null>(null);
 
   // Filter state
   const [cardKind, setCardKind] = useState<string>(cardKindParam || "");
   const [scaleType, setScaleType] = useState<string>(scaleTypeParam || "");
+  const [scaleRoot, setScaleRoot] = useState<string>(scaleRootParam || "");
   const [difficulty, setDifficulty] = useState<string>(difficultyParam || "all");
 
   const fetchNextCard = useCallback(async () => {
@@ -47,6 +50,7 @@ export default function PracticePage() {
       if (milestone) params.set("milestoneKey", milestone);
       if (cardKind) params.set("cardKind", cardKind);
       if (scaleType) params.set("scaleType", scaleType);
+      if (scaleRoot) params.set("scaleRoot", scaleRoot);
       if (difficulty && difficulty !== "all") params.set("difficulty", difficulty);
       const url = params.toString() ? `${base}?${params.toString()}` : base;
 
@@ -85,7 +89,7 @@ export default function PracticePage() {
     } finally {
       setLoading(false);
     }
-  }, [milestone, cardKind, scaleType, difficulty]);
+  }, [milestone, cardKind, scaleType, scaleRoot, difficulty]);
 
   // Update URL when filters change
   useEffect(() => {
@@ -93,24 +97,27 @@ export default function PracticePage() {
     if (milestone) params.set("milestone", milestone);
     if (cardKind) params.set("cardKind", cardKind);
     if (scaleType) params.set("scaleType", scaleType);
+    if (scaleRoot) params.set("scaleRoot", scaleRoot);
     if (difficulty && difficulty !== "all") params.set("difficulty", difficulty);
     const newUrl = params.toString() ? `/practice?${params.toString()}` : "/practice";
     router.replace(newUrl, { scroll: false });
-  }, [cardKind, scaleType, difficulty, milestone, router]);
+  }, [cardKind, scaleType, scaleRoot, difficulty, milestone, router]);
 
   const handleFilterChange = (filterType: string, value: string) => {
     if (filterType === "cardKind") setCardKind(value);
     else if (filterType === "scaleType") setScaleType(value);
+    else if (filterType === "scaleRoot") setScaleRoot(value);
     else if (filterType === "difficulty") setDifficulty(value);
   };
 
   const clearFilters = () => {
     setCardKind("");
     setScaleType("");
+    setScaleRoot("");
     setDifficulty("all");
   };
 
-  const hasActiveFilters = cardKind || scaleType || (difficulty && difficulty !== "all");
+  const hasActiveFilters = cardKind || scaleType || scaleRoot || (difficulty && difficulty !== "all");
 
   // Chord-based card kinds that use scaleMemberships
   const CHORD_BASED_KINDS = ["notes_from_chord", "chord_from_notes"];
@@ -120,9 +127,49 @@ export default function PracticePage() {
   const KEY_AGNOSTIC_KINDS = ["key_signature", "circle_geometry", "circle_relative_minor", "circle_neighbor_key"];
   const isKeyAgnosticCard = KEY_AGNOSTIC_KINDS.includes(cardKind);
 
+  // Scale root options (12 pitch classes)
+  const SCALE_ROOT_OPTIONS: string[] = [
+    "C",
+    "C#",
+    "D",
+    "D#",
+    "E",
+    "F",
+    "F#",
+    "G",
+    "G#",
+    "A",
+    "A#",
+    "B",
+  ];
+
+  // Fetch card count when filters change
+  const fetchCardCount = useCallback(async () => {
+    try {
+      const base = "/api/cards/count";
+      const params = new URLSearchParams();
+      if (milestone) params.set("milestoneKey", milestone);
+      if (cardKind) params.set("cardKind", cardKind);
+      if (scaleType) params.set("scaleType", scaleType);
+      if (scaleRoot) params.set("scaleRoot", scaleRoot);
+      if (difficulty && difficulty !== "all") params.set("difficulty", difficulty);
+      const url = params.toString() ? `${base}?${params.toString()}` : base;
+
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setCardCount(data.count ?? 0);
+      }
+    } catch (err) {
+      // Silently fail - count is not critical
+      console.error("Error fetching card count:", err);
+    }
+  }, [milestone, cardKind, scaleType, scaleRoot, difficulty]);
+
   useEffect(() => {
     fetchNextCard();
-  }, [fetchNextCard]);
+    fetchCardCount();
+  }, [fetchNextCard, fetchCardCount]);
 
   async function handleSelectOption(index: number) {
     setSelectedIndex(index);
@@ -189,7 +236,7 @@ export default function PracticePage() {
               Filters
               {hasActiveFilters && (
                 <span className="ml-1 rounded-full bg-emerald-500 text-white text-[10px] px-1.5 py-0.5">
-                  {[cardKind, scaleType, difficulty !== "all" ? difficulty : null].filter(Boolean).length}
+                  {[cardKind, scaleType, scaleRoot, difficulty !== "all" ? difficulty : null].filter(Boolean).length}
                 </span>
               )}
             </button>
@@ -197,6 +244,15 @@ export default function PracticePage() {
           <h1 className="text-2xl font-light tracking-tight text-foreground">
             Chords & scales flashcards
           </h1>
+          {cardCount !== null && (
+            <p className="text-sm text-muted mt-1">
+              {cardCount === 0
+                ? "No cards available"
+                : cardCount === 1
+                ? "1 card available"
+                : `${cardCount} cards available`}
+            </p>
+          )}
         </header>
 
         {showFilters && (
@@ -224,7 +280,7 @@ export default function PracticePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Card Kind Filter */}
               <div>
                 <label className="block text-xs font-medium text-muted mb-1.5">
@@ -267,11 +323,33 @@ export default function PracticePage() {
                   <option value="mixolydian">Mixolydian</option>
                   <option value="phrygian">Phrygian</option>
                 </select>
-                {isChordBasedCard && (
-                  <p className="mt-1.5 text-xs text-muted">
-                    You&apos;ll be quizzed on chords that belong to this scale type.
+                {isKeyAgnosticCard && (
+                  <p className="mt-1.5 text-xs text-muted italic">
+                    Scale filter not applicable for this card type.
                   </p>
                 )}
+              </div>
+
+              {/* Scale Root Filter */}
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1.5">
+                  Scale Root
+                </label>
+                <select
+                  value={scaleRoot}
+                  onChange={(e) => handleFilterChange("scaleRoot", e.target.value)}
+                  disabled={isKeyAgnosticCard}
+                  className={`w-full rounded-lg border border-subtle bg-surface-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${
+                    isKeyAgnosticCard ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <option value="">Any root</option>
+                  {SCALE_ROOT_OPTIONS.map((root) => (
+                    <option key={root} value={root}>
+                      {root}
+                    </option>
+                  ))}
+                </select>
                 {isKeyAgnosticCard && (
                   <p className="mt-1.5 text-xs text-muted italic">
                     Scale filter not applicable for this card type.
@@ -300,9 +378,21 @@ export default function PracticePage() {
                 <p className="text-xs text-muted">
                   Filters are active. Cards will update automatically.
                 </p>
-                {isChordBasedCard && scaleType && (
-                  <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-                    Showing chords that belong to {scaleType === "major" ? "major" : scaleType === "natural_minor" ? "natural minor" : scaleType} keys.
+                {(isChordBasedCard || cardKind === "scale_spelling" || cardKind === "diatonic_chord_id" || cardKind === "degree_to_chord" || cardKind === "chord_to_degree") && (scaleType || scaleRoot) && (
+                  <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                    Filtering by:{" "}
+                    {scaleType && scaleRoot
+                      ? `${scaleRoot} ${scaleType === "major" ? "major" : scaleType === "natural_minor" ? "natural minor" : scaleType}`
+                      : scaleType
+                      ? `Any ${scaleType === "major" ? "major" : scaleType === "natural_minor" ? "natural minor" : scaleType} key`
+                      : scaleRoot
+                      ? `${scaleRoot} key (any type)`
+                      : ""}
+                    {isChordBasedCard && (
+                      <span className="block mt-1 text-emerald-500 dark:text-emerald-300 font-normal">
+                        You&apos;ll be quizzed on chords that belong to this key.
+                      </span>
+                    )}
                   </p>
                 )}
               </div>
