@@ -11,8 +11,12 @@ import {
 import {
   getScaleDefinition,
   getDiatonicChords,
+  buildTriadFromRoot,
+  type Triad,
+  type TriadQuality,
 } from "../lib/theory";
 import type { PitchClass } from "../lib/theory/midiUtils";
+import type { ScaleType } from "../lib/theory/types";
 import type {
   ScaleSpellingMeta,
   DiatonicChordIdMeta,
@@ -22,6 +26,168 @@ import type {
   ProgressionPredictionMeta,
   TensionSelectionMeta,
 } from "../lib/cards/advancedCardMeta";
+import type { ScaleMembership } from "../lib/cards/basicCardMeta";
+
+/**
+ * Helper: Identify a triad from an array of notes
+ * Returns the root and quality if it's a valid triad
+ */
+function identifyTriadFromNotes(notes: PitchClass[]): { root: PitchClass; quality: TriadQuality } | null {
+  if (notes.length !== 3) return null;
+
+  const allPitchClasses: PitchClass[] = [
+    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
+  ];
+
+  // Try each note as the root
+  for (const potentialRoot of notes) {
+    try {
+      // Try each quality
+      const qualities: TriadQuality[] = ["maj", "min", "dim", "aug"];
+      for (const quality of qualities) {
+        const triad = buildTriadFromRoot(potentialRoot, quality);
+        // Compare pitch classes (order-independent)
+        const triadNotes = new Set(triad.pitchClasses);
+        const inputNotes = new Set(notes);
+        if (triadNotes.size === inputNotes.size && 
+            [...triadNotes].every(n => inputNotes.has(n))) {
+          return { root: potentialRoot, quality };
+        }
+      }
+    } catch {
+      // Continue to next root
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Helper: Check if two note arrays represent the same chord (order-independent)
+ */
+function notesMatch(notes1: PitchClass[], notes2: PitchClass[]): boolean {
+  if (notes1.length !== notes2.length) return false;
+  const set1 = new Set(notes1);
+  const set2 = new Set(notes2);
+  return set1.size === set2.size && [...set1].every(n => set2.has(n));
+}
+
+/**
+ * Compute and attach scale memberships to chord-based cards
+ */
+async function attachScaleMemberships() {
+  // Get all chord-based cards
+  const chordCards = await prisma.cardTemplate.findMany({
+    where: {
+      kind: { in: ["notes_from_chord", "chord_from_notes"] },
+    },
+  });
+
+  if (chordCards.length === 0) {
+    console.log("No chord-based cards found to attach scale memberships");
+    return;
+  }
+
+  // All 12 pitch classes
+  const allPitchClasses: PitchClass[] = [
+    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
+  ];
+
+  // All key types to check
+  const keyTypes: Array<{ type: ScaleType; label: string }> = [
+    { type: "major", label: "major" },
+    { type: "natural_minor", label: "natural_minor" },
+  ];
+
+  // Process each chord card
+  for (const card of chordCards) {
+    if (!card.meta || typeof card.meta !== "object") continue;
+
+    const meta = card.meta as any;
+    let chordRoot: PitchClass | null = null;
+    let chordQuality: TriadQuality | null = null;
+    let chordNotes: PitchClass[] | null = null;
+
+    // Extract chord information based on card kind
+    if (card.kind === "notes_from_chord") {
+      // Has root and quality
+      if (meta.root && meta.quality) {
+        chordRoot = meta.root as PitchClass;
+        chordQuality = meta.quality as TriadQuality;
+        try {
+          const triad = buildTriadFromRoot(chordRoot, chordQuality);
+          chordNotes = triad.pitchClasses;
+        } catch {
+          continue; // Skip if can't build chord
+        }
+      } else {
+        continue; // Skip if missing required fields
+      }
+    } else if (card.kind === "chord_from_notes") {
+      // Has notes array, need to identify root and quality
+      if (meta.notes && Array.isArray(meta.notes)) {
+        chordNotes = meta.notes as PitchClass[];
+        const identified = identifyTriadFromNotes(chordNotes);
+        if (!identified) continue; // Skip if can't identify chord
+        chordRoot = identified.root;
+        chordQuality = identified.quality;
+      } else {
+        continue; // Skip if missing notes
+      }
+    } else {
+      continue; // Skip non-chord cards
+    }
+
+    if (!chordRoot || !chordQuality || !chordNotes) continue;
+
+    // Find scale memberships for this chord
+    const scaleMemberships: ScaleMembership[] = [];
+
+    // Check all keys
+    for (const keyRoot of allPitchClasses) {
+      for (const { type: keyType } of keyTypes) {
+        try {
+          const diatonicSet = getDiatonicChords(keyRoot, keyType);
+          
+          // Check triads
+          for (const { degree, triad } of diatonicSet.triads) {
+            if (triad.root === chordRoot && 
+                triad.quality === chordQuality &&
+                notesMatch(triad.pitchClasses, chordNotes)) {
+              scaleMemberships.push({
+                keyRoot,
+                keyType: keyType === "major" ? "major" : "natural_minor",
+                degree,
+              });
+              break; // Found in this key, move to next key
+            }
+          }
+        } catch (error) {
+          // Skip this key if there's an error
+          continue;
+        }
+      }
+    }
+
+    // Update the card with scale memberships
+    if (scaleMemberships.length > 0) {
+      const updatedMeta = {
+        ...meta,
+        root: chordRoot,
+        quality: chordQuality,
+        notes: chordNotes,
+        scaleMemberships,
+      };
+
+      await prisma.cardTemplate.update({
+        where: { id: card.id },
+        data: { meta: updatedMeta },
+      });
+    }
+  }
+
+  console.log(`Attached scale memberships to ${chordCards.length} chord-based cards`);
+}
 
 async function main() {
   // Remove existing data for idempotency in dev
@@ -31,6 +197,7 @@ async function main() {
   await prisma.milestone.deleteMany();
 
   // Example 1: "Which notes make this chord?" – C major
+  const cMajorTriad = buildTriadFromRoot("C", "maj");
   await prisma.cardTemplate.create({
     data: {
       slug: "c-major-chord-notes",
@@ -45,12 +212,14 @@ async function main() {
         root: "C",
         quality: "maj",
         type: "triad",
+        notes: cMajorTriad.pitchClasses,
       },
       milestoneKey: "TRIADS",
     },
   });
 
   // Example 2: "What chord is this?" – notes → chord name
+  const cMajorFromNotes = buildTriadFromRoot("C", "maj");
   await prisma.cardTemplate.create({
     data: {
       slug: "which-chord-c-e-g",
@@ -62,7 +231,9 @@ async function main() {
       optionD: "G major",
       correctIndex: 0,
       meta: {
-        notes: ["C", "E", "G"],
+        root: "C",
+        quality: "maj",
+        notes: cMajorFromNotes.pitchClasses,
       },
       milestoneKey: "TRIADS",
     },
@@ -283,6 +454,9 @@ async function main() {
 
   // Generate and seed advanced flashcard cards
   await seedAdvancedCards();
+
+  // Compute and attach scale memberships for chord-based cards
+  await attachScaleMemberships();
 }
 
 /**
