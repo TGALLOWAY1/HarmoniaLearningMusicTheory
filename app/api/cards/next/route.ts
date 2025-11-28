@@ -8,7 +8,11 @@ export async function GET(request: Request) {
     const milestoneKey = url.searchParams.get("milestoneKey");
     const cardKind = url.searchParams.get("cardKind");
     const scaleType = url.searchParams.get("scaleType");
+    const scaleRoot = url.searchParams.get("scaleRoot"); // Optional: specific key root
     const difficulty = url.searchParams.get("difficulty"); // "easy" | "all"
+
+    // Chord-based card kinds that use scaleMemberships
+    const CHORD_BASED_KINDS = ["notes_from_chord", "chord_from_notes"];
 
     // Build where clause
     const whereClause: any = {};
@@ -36,13 +40,37 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "No cards available" }, { status: 404 });
     }
 
-    // 2) Filter by scale type if specified (requires checking meta field)
+    // 2) Filter by scale type/root if specified (requires checking meta field)
     let filteredTemplates = templates;
-    if (scaleType) {
+    if (scaleType || scaleRoot) {
       filteredTemplates = templates.filter((t) => {
         if (!t.meta || typeof t.meta !== "object") return false;
         const meta = t.meta as any;
-        return meta.type === scaleType;
+
+        // For chord-based cards, check scaleMemberships
+        if (CHORD_BASED_KINDS.includes(t.kind)) {
+          if (!meta.scaleMemberships || !Array.isArray(meta.scaleMemberships)) {
+            return false; // No scale memberships = doesn't match
+          }
+
+          // Check if any scaleMembership matches the filter criteria
+          return meta.scaleMemberships.some((membership: any) => {
+            const matchesType = !scaleType || membership.keyType === scaleType;
+            const matchesRoot = !scaleRoot || membership.keyRoot === scaleRoot;
+            return matchesType && matchesRoot;
+          });
+        } else {
+          // For non-chord cards (e.g., scale_spelling), use existing behavior
+          // Check meta.type for scale type
+          if (scaleType && meta.type !== scaleType) {
+            return false;
+          }
+          // If scaleRoot is specified for non-chord cards, check meta.keyRoot
+          if (scaleRoot && meta.keyRoot !== scaleRoot) {
+            return false;
+          }
+          return true;
+        }
       });
     }
 

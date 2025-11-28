@@ -112,6 +112,14 @@ export default function PracticePage() {
 
   const hasActiveFilters = cardKind || scaleType || (difficulty && difficulty !== "all");
 
+  // Chord-based card kinds that use scaleMemberships
+  const CHORD_BASED_KINDS = ["notes_from_chord", "chord_from_notes"];
+  const isChordBasedCard = CHORD_BASED_KINDS.includes(cardKind);
+
+  // Card types that are key-agnostic (don't benefit from scale filtering)
+  const KEY_AGNOSTIC_KINDS = ["key_signature", "circle_geometry", "circle_relative_minor", "circle_neighbor_key"];
+  const isKeyAgnosticCard = KEY_AGNOSTIC_KINDS.includes(cardKind);
+
   useEffect(() => {
     fetchNextCard();
   }, [fetchNextCard]);
@@ -247,7 +255,10 @@ export default function PracticePage() {
                 <select
                   value={scaleType}
                   onChange={(e) => handleFilterChange("scaleType", e.target.value)}
-                  className="w-full rounded-lg border border-subtle bg-surface-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  disabled={isKeyAgnosticCard}
+                  className={`w-full rounded-lg border border-subtle bg-surface-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${
+                    isKeyAgnosticCard ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   <option value="">All scales</option>
                   <option value="major">Major</option>
@@ -256,6 +267,16 @@ export default function PracticePage() {
                   <option value="mixolydian">Mixolydian</option>
                   <option value="phrygian">Phrygian</option>
                 </select>
+                {isChordBasedCard && (
+                  <p className="mt-1.5 text-xs text-muted">
+                    You&apos;ll be quizzed on chords that belong to this scale type.
+                  </p>
+                )}
+                {isKeyAgnosticCard && (
+                  <p className="mt-1.5 text-xs text-muted italic">
+                    Scale filter not applicable for this card type.
+                  </p>
+                )}
               </div>
 
               {/* Difficulty Filter */}
@@ -279,6 +300,11 @@ export default function PracticePage() {
                 <p className="text-xs text-muted">
                   Filters are active. Cards will update automatically.
                 </p>
+                {isChordBasedCard && scaleType && (
+                  <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                    Showing chords that belong to {scaleType === "major" ? "major" : scaleType === "natural_minor" ? "natural minor" : scaleType} keys.
+                  </p>
+                )}
               </div>
             )}
           </div>
