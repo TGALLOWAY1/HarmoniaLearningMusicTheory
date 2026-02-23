@@ -5,6 +5,7 @@ export const revalidate = 0;
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCircleNodes, type PitchClass } from "@/lib/theory";
+import { normalizeMetaForQuery } from "@/lib/cards/metaNormalization";
 
 type KeySummaryDto = {
   id: string;
@@ -18,46 +19,42 @@ type CircleSummaryResponse = {
   keys: KeySummaryDto[];
 };
 
+type TemplateWithRelations = {
+  id: number;
+  kind: string;
+  meta: unknown;
+  states: Array<{ attemptsCount: number; correctCount: number; dueAt: Date }>;
+  attempts: Array<{ responseMs: number | null; createdAt: Date }>;
+};
+
 /**
- * Type guard to check if meta has a majorRoot field
+ * Get the key root this template contributes to. Uses normalized meta
+ * (keyRoot, majorRoot, root) or infers from circle_geometry clockPosition.
+ * Returns null if template cannot be attributed to a key.
  */
-function hasMajorRoot(meta: unknown): meta is { majorRoot: string } {
-  return (
-    typeof meta === "object" &&
-    meta !== null &&
-    "majorRoot" in meta &&
-    typeof (meta as { majorRoot: unknown }).majorRoot === "string"
-  );
+function getKeyRootForTemplate(template: TemplateWithRelations): PitchClass | null {
+  const norm = normalizeMetaForQuery(template.meta, template.kind);
+  if (norm.keyRoot) return norm.keyRoot as PitchClass;
+
+  // circle_geometry with clockPosition 12 = C at 12 o'clock
+  if (template.kind === "circle_geometry" && template.meta && typeof template.meta === "object") {
+    const m = template.meta as Record<string, unknown>;
+    if (m.clockPosition === 12) return "C";
+  }
+  return null;
 }
 
 /**
- * Compute mastery metrics for a single major key
+ * Compute mastery metrics for a single major key.
+ * Mastery = accuracy * coverage (percent correct × fraction of cards in key that have been attempted).
  */
 function computeKeySummary(
   root: PitchClass,
-  templates: Array<{
-    id: number;
-    meta: unknown;
-    states: Array<{
-      attemptsCount: number;
-      correctCount: number;
-      dueAt: Date;
-    }>;
-    attempts: Array<{
-      responseMs: number | null;
-      createdAt: Date;
-    }>;
-  }>
+  templates: TemplateWithRelations[]
 ): KeySummaryDto {
   const keyId = `${root}_major`;
 
-  // Filter templates that belong to this key (meta.majorRoot === root)
-  const keyTemplates = templates.filter((template) => {
-    if (!hasMajorRoot(template.meta)) {
-      return false;
-    }
-    return template.meta.majorRoot === root;
-  });
+  const keyTemplates = templates.filter((t) => getKeyRootForTemplate(t) === root);
 
   // If no templates exist for this key, return default values
   if (keyTemplates.length === 0) {
@@ -143,41 +140,27 @@ function computeKeySummary(
 
 export async function GET() {
   try {
-    console.log("[Circle Summary API] Starting request...");
-    
-    // Fetch all circle-related CardTemplates once
-    console.log("[Circle Summary API] Fetching card templates...");
     const allCircleTemplates = await prisma.cardTemplate.findMany({
-      where: {
-        kind: {
-          startsWith: "circle_",
-        },
-      },
+      where: { milestoneKey: "CIRCLE_OF_FIFTHS" },
       include: {
         states: true,
         attempts: true,
       },
     });
-    console.log(`[Circle Summary API] Found ${allCircleTemplates.length} circle templates`);
 
-    // Get all major keys from the circle
     const nodes = getCircleNodes();
-    console.log(`[Circle Summary API] Processing ${nodes.length} circle nodes`);
     const summaries: KeySummaryDto[] = [];
 
     // Compute summary for each major key
     for (const node of nodes) {
       try {
         const summary = computeKeySummary(node.root, allCircleTemplates);
-        // Validate summary structure
-        if (typeof summary.mastery !== 'number' || isNaN(summary.mastery)) {
-          console.error(`[Circle Summary API] Invalid mastery for ${node.root}:`, summary.mastery);
-          summary.mastery = 0; // Fallback to 0
-        }
-        summaries.push(summary);
-      } catch (nodeError) {
-        console.error(`[Circle Summary API] Error processing node ${node.root}:`, nodeError);
-        // Add a default summary for this node
+        summaries.push(
+          typeof summary.mastery === "number" && !isNaN(summary.mastery)
+            ? summary
+            : { ...summary, mastery: 0 }
+        );
+      } catch {
         summaries.push({
           id: `${node.root}_major`,
           mastery: 0,
@@ -188,27 +171,8 @@ export async function GET() {
       }
     }
 
-    // Validate all summaries have mastery
-    const invalidSummaries = summaries.filter(s => typeof s.mastery !== 'number' || isNaN(s.mastery));
-    if (invalidSummaries.length > 0) {
-      console.error("[Circle Summary API] Found invalid summaries:", invalidSummaries);
-      // Fix invalid summaries
-      invalidSummaries.forEach(s => {
-        s.mastery = 0;
-      });
-    }
-
-    const response: CircleSummaryResponse = {
-      keys: summaries,
-    };
-
-    console.log(`[Circle Summary API] Returning ${summaries.length} summaries`);
-    return NextResponse.json(response);
+    return NextResponse.json({ keys: summaries });
   } catch (error) {
-    console.error("[Circle Summary API] Fatal error:", error);
-    console.error("[Circle Summary API] Error stack:", error instanceof Error ? error.stack : 'No stack trace');
-    
-    // Return empty but valid response structure
     const nodes = getCircleNodes();
     const fallbackSummaries: KeySummaryDto[] = nodes.map(node => ({
       id: `${node.root}_major`,
@@ -223,7 +187,7 @@ export async function GET() {
         keys: fallbackSummaries,
         error: error instanceof Error ? error.message : "Internal server error"
       },
-      { status: 200 } // Return 200 with fallback data so frontend doesn't break
+      { status: 200 }
     );
   }
 }
