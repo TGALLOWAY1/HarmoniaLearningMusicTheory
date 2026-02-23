@@ -27,7 +27,11 @@ const HARMONIA_PITCH_CLASSES: readonly PitchClass[] = [
 
 const VALID_PITCH_CLASS_SET = new Set<string>(HARMONIA_PITCH_CLASSES);
 
-/** Harmonia-shaped chord in a progression. quality conforms to ChordQuality. */
+/**
+ * Harmonia-shaped chord in a progression.
+ * degree: ChordGenerator roman numeral passed through as string (preserves bVI, bVII, etc.).
+ * quality conforms to ChordQuality. notes are sharps-only PitchClass[].
+ */
 export type ChordProgressionItem = {
   degree: string;
   symbol: string;
@@ -128,7 +132,7 @@ export function generateChordProgression(
   const raw = generateProgressionWithMode(root, mode, mood, complexity);
 
   return raw.map((chord) => ({
-    degree: chord.roman,
+    degree: chord.roman, // Preserve flat degrees (bVI, bVII, etc.) as string
     symbol: chord.symbol,
     quality: mapQualityToHarmonia(inferQualityFromSymbol(chord.symbol)),
     notes: normalizeNotesToPitchClasses(chord.notes),

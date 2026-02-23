@@ -143,6 +143,27 @@ describe("chordGeneratorAdapter", () => {
     });
   });
 
+  describe("degree/roman numeral mapping (ChordGenerator roman → degree string)", () => {
+    it("preserves bVII as degree string and normalizes notes to sharps-only", () => {
+      const harmoniaPitchClasses = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+      let bVIIChord: { degree: string; notes: PitchClass[] } | undefined;
+      for (let i = 0; i < 50; i++) {
+        const progression = generateChordProgression("D", "dorian", { mood: "moody" });
+        const found = progression.find((c) => c.degree === "bVII");
+        if (found) {
+          bVIIChord = found;
+          break;
+        }
+      }
+      expect(bVIIChord).toBeDefined();
+      expect(bVIIChord!.degree).toBe("bVII");
+      for (const note of bVIIChord!.notes) {
+        expect(harmoniaPitchClasses).toContain(note);
+        expect(note).not.toMatch(/b/);
+      }
+    });
+  });
+
   describe("input validation", () => {
     it("rejects flat roots at runtime", () => {
       expect(() =>
