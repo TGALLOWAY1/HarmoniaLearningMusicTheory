@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateChordProgression,
   SCALE_TYPE_TO_MODE,
+  mapQualityToHarmonia,
   type ChordGeneratorMode,
 } from "../../chordGeneratorAdapter";
 import type { PitchClass } from "../midiUtils";
@@ -89,6 +90,54 @@ describe("chordGeneratorAdapter", () => {
         for (const note of chord.notes) {
           expect(seen.has(note)).toBe(false);
           seen.add(note);
+        }
+      }
+    });
+  });
+
+  describe("chord quality mapping (ChordGenerator → Harmonia ChordQuality)", () => {
+    const HARMONIA_QUALITIES = ["maj", "min", "dim", "aug", "maj7", "min7", "dom7", "half-dim7", "dim7"];
+
+    it('"7" maps to "dom7"', () => {
+      expect(mapQualityToHarmonia("7")).toBe("dom7");
+    });
+
+    it('"m7" maps to "min7"', () => {
+      expect(mapQualityToHarmonia("m7")).toBe("min7");
+    });
+
+    it("supported qualities map correctly", () => {
+      expect(mapQualityToHarmonia("")).toBe("maj");
+      expect(mapQualityToHarmonia("m")).toBe("min");
+      expect(mapQualityToHarmonia("dim")).toBe("dim");
+      expect(mapQualityToHarmonia("maj7")).toBe("maj7");
+    });
+
+    it("unsupported qualities map to closest (never leak through)", () => {
+      expect(mapQualityToHarmonia("sus2")).toBe("maj");
+      expect(mapQualityToHarmonia("sus4")).toBe("maj");
+      expect(mapQualityToHarmonia("add9")).toBe("maj");
+      expect(mapQualityToHarmonia("m(add9)")).toBe("min");
+      expect(mapQualityToHarmonia("maj(add9)")).toBe("maj");
+    });
+
+    it("unsupported qualities never appear in progression output", () => {
+      const unsupported = ["sus2", "sus4", "add9", "m(add9)", "maj(add9)"];
+      for (let i = 0; i < 20; i++) {
+        const progression = generateChordProgression("C", "major", { complexity: 2 });
+        for (const chord of progression) {
+          expect(unsupported).not.toContain(chord.quality);
+          expect(HARMONIA_QUALITIES).toContain(chord.quality);
+        }
+      }
+    });
+
+    it("all output qualities are Harmonia ChordQuality", () => {
+      const scaleTypes: ScaleType[] = ["major", "natural_minor", "dorian", "mixolydian", "phrygian"];
+      for (const st of scaleTypes) {
+        const progression = generateChordProgression("C", st);
+        for (const chord of progression) {
+          expect(HARMONIA_QUALITIES).toContain(chord.quality);
         }
       }
     });

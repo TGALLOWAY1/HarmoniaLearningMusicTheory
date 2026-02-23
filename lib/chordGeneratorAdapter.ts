@@ -11,6 +11,7 @@
 
 import type { PitchClass } from "./theory/midiUtils";
 import type { ScaleType } from "./theory/types";
+import type { ChordQuality } from "./theory/chord";
 import { midiToPitchClass } from "./theory/midiUtils";
 import { Note } from "@tonaljs/tonal";
 import {
@@ -26,11 +27,11 @@ const HARMONIA_PITCH_CLASSES: readonly PitchClass[] = [
 
 const VALID_PITCH_CLASS_SET = new Set<string>(HARMONIA_PITCH_CLASSES);
 
-/** Harmonia-shaped chord in a progression */
+/** Harmonia-shaped chord in a progression. quality conforms to ChordQuality. */
 export type ChordProgressionItem = {
   degree: string;
   symbol: string;
-  quality: string;
+  quality: ChordQuality;
   notes: PitchClass[];
 };
 
@@ -61,22 +62,30 @@ function normalizeNotesToPitchClasses(tonalNotes: string[]): PitchClass[] {
   return result;
 }
 
-/** Map ChordGenerator quality strings to Harmonia-style quality */
-function mapQualityToHarmonia(cgQuality: string): string {
-  const map: Record<string, string> = {
+/**
+ * Map ChordGenerator quality to Harmonia ChordQuality.
+ * Supported: ""→maj, m→min, dim→dim, maj7→maj7, m7→min7, 7→dom7.
+ * Unsupported (sus2, sus4, add9, m(add9), maj(add9)) map to closest: maj or min.
+ */
+export function mapQualityToHarmonia(cgQuality: string): ChordQuality {
+  const supported: Record<string, ChordQuality> = {
     "": "maj",
     m: "min",
     dim: "dim",
     maj7: "maj7",
     m7: "min7",
     "7": "dom7",
-    sus2: "sus2",
-    sus4: "sus4",
-    add9: "add9",
-    "m(add9)": "m(add9)",
-    "maj(add9)": "maj(add9)",
   };
-  return map[cgQuality] ?? cgQuality;
+  const unsupportedToClosest: Record<string, ChordQuality> = {
+    sus2: "maj",
+    sus4: "maj",
+    add9: "maj",
+    "m(add9)": "min",
+    "maj(add9)": "maj",
+  };
+  if (supported[cgQuality]) return supported[cgQuality];
+  if (unsupportedToClosest[cgQuality]) return unsupportedToClosest[cgQuality];
+  return "maj";
 }
 
 /** ChordGenerator Mode (harmonyEngine.ts) */
