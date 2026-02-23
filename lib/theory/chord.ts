@@ -13,7 +13,13 @@ export type TriadQuality = "maj" | "min" | "dim" | "aug";
 
 export type SeventhQuality = "maj7" | "min7" | "dom7" | "half-dim7" | "dim7";
 
-export type ChordQuality = TriadQuality | "maj7" | "min7" | "dom7";
+export type ChordQuality =
+  | TriadQuality
+  | "maj7"
+  | "min7"
+  | "dom7"
+  | "half-dim7"
+  | "dim7";
 
 export type Triad = {
   root: PitchClass;
@@ -443,6 +449,10 @@ export function formatChordSymbol(
       return `${root}°`;
     case "aug":
       return `${root}+`;
+    case "half-dim7":
+      return `${root}m7b5`;
+    case "dim7":
+      return `${root}°7`;
     default:
       throw new Error(`Unsupported chord quality: ${quality}`);
   }

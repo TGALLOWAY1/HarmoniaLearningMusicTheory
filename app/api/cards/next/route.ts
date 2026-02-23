@@ -4,7 +4,7 @@ export const revalidate = 0;
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { normalizeMetaForQuery } from "@/lib/cards/metaNormalization";
+import { filterTemplatesByScaleMeta } from "@/lib/cards/filterTemplatesByScaleMeta";
 
 export async function GET(request: Request) {
   try {
@@ -15,9 +15,6 @@ export async function GET(request: Request) {
     const scaleType = url.searchParams.get("scaleType");
     const scaleRoot = url.searchParams.get("scaleRoot"); // Optional: specific key root
     const difficulty = url.searchParams.get("difficulty"); // "easy" | "all"
-
-    // Chord-based card kinds that use scaleMemberships
-    const CHORD_BASED_KINDS = ["notes_from_chord", "chord_from_notes"];
 
     // Build where clause
     const whereClause: any = {};
@@ -45,39 +42,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "No cards available" }, { status: 404 });
     }
 
-    // 2) Filter by scale type/root if specified (requires checking meta field)
-    let filteredTemplates = templates;
-    if (scaleType || scaleRoot) {
-      filteredTemplates = templates.filter((t) => {
-        if (!t.meta || typeof t.meta !== "object") return false;
-        const meta = t.meta as any;
-
-        // For chord-based cards, check scaleMemberships
-        if (CHORD_BASED_KINDS.includes(t.kind)) {
-          if (!meta.scaleMemberships || !Array.isArray(meta.scaleMemberships)) {
-            return false; // No scale memberships = doesn't match
-          }
-
-          // Check if any scaleMembership matches the filter criteria
-          return meta.scaleMemberships.some((membership: any) => {
-            const matchesType = !scaleType || membership.keyType === scaleType;
-            const matchesRoot = !scaleRoot || membership.keyRoot === scaleRoot;
-            return matchesType && matchesRoot;
-          });
-        } else {
-          // For non-chord cards (e.g., scale_spelling), use normalized meta
-          // (handles legacy root->keyRoot, type->keyType)
-          const norm = normalizeMetaForQuery(meta, t.kind);
-          if (scaleType && norm.keyType !== scaleType) {
-            return false;
-          }
-          if (scaleRoot && norm.keyRoot !== scaleRoot) {
-            return false;
-          }
-          return true;
-        }
-      });
-    }
+    // 2) Filter by scale type/root if specified
+    let filteredTemplates = filterTemplatesByScaleMeta(templates, {
+      scaleType: scaleType ?? undefined,
+      scaleRoot: scaleRoot ?? undefined,
+    });
 
     if (filteredTemplates.length === 0) {
       return NextResponse.json(

@@ -1,56 +1,67 @@
-/**
- * TODO: Unit tests for chord generation
- * 
- * These tests should be implemented once a test framework is set up
- * (e.g., Jest, Vitest, or similar).
- * 
- * Test cases to implement:
- * 
- * 1. C Major Diatonic Triads:
- *    - I: C E G (maj)
- *    - ii: D F A (min)
- *    - iii: E G B (min)
- *    - IV: F A C (maj)
- *    - V: G B D (maj)
- *    - vi: A C E (min)
- *    - vii°: B D F (dim)
- * 
- * 2. C Major Diatonic Sevenths:
- *    - I: C E G B (maj7)
- *    - ii: D F A C (min7)
- *    - iii: E G B D (min7)
- *    - IV: F A C E (maj7)
- *    - V: G B D F (dom7)
- *    - vi: A C E G (min7)
- *    - vii°: B D F A (half-dim7)
- * 
- * 3. A Natural Minor Diatonic Triads:
- *    - i: A C E (min)
- *    - ii°: B D F (dim)
- *    - III: C E G (maj)
- *    - iv: D F A (min)
- *    - v: E G B (min)
- *    - VI: F A C (maj)
- *    - VII: G B D (maj)
- * 
- * 4. Test buildTriadFromScale with various scale degrees
- * 5. Test buildSeventhFromScale with various scale degrees
- * 
- * Example test structure (Jest/Vitest):
- * 
- * import { describe, it, expect } from 'vitest';
- * import { getDiatonicChords, buildTriadFromScale } from '../chord';
- * import { getMajorScale } from '../scale';
- * 
- * describe('diatonic chords', () => {
- *   describe('C major', () => {
- *     it('should generate correct triads', () => {
- *       const chords = getDiatonicChords("C", "major");
- *       expect(chords.triads[0].triad.pitchClasses).toEqual(["C", "E", "G"]);
- *       expect(chords.triads[0].triad.quality).toBe("maj");
- *       expect(chords.triads[0].degree).toBe("I");
- *     });
- *   });
- * });
- */
+import { describe, it, expect } from "vitest";
+import {
+  buildTriadFromRoot,
+  buildSeventhFromRoot,
+  getDiatonicChords,
+  buildSeventhFromScale,
+} from "../chord";
+import { getMajorScale } from "../scale";
 
+// Engine uses sharp-only pitch classes (C#, D#, F#, G#, A#). Flats appear as enharmonic sharps.
+// TODO: Improve enharmonic handling (e.g. C minor as C Eb G) in a future enhancement.
+
+describe("chord golden tests", () => {
+  describe("C major triad", () => {
+    it("returns C E G", () => {
+      const triad = buildTriadFromRoot("C", "maj");
+      expect(triad.root).toBe("C");
+      expect(triad.quality).toBe("maj");
+      expect(triad.pitchClasses).toEqual(["C", "E", "G"]);
+    });
+  });
+
+  describe("C minor triad", () => {
+    it("returns C D# G (sharp-only engine spelling)", () => {
+      const triad = buildTriadFromRoot("C", "min");
+      expect(triad.root).toBe("C");
+      expect(triad.quality).toBe("min");
+      expect(triad.pitchClasses).toEqual(["C", "D#", "G"]);
+    });
+  });
+
+  describe("C7 (dominant seventh)", () => {
+    it("returns C E G A# (sharp-only engine spelling)", () => {
+      const seventh = buildSeventhFromRoot("C", "dom7");
+      expect(seventh.root).toBe("C");
+      expect(seventh.quality).toBe("dom7");
+      expect(seventh.pitchClasses).toEqual(["C", "E", "G", "A#"]);
+    });
+  });
+
+  describe("Cmaj7", () => {
+    it("returns C E G B", () => {
+      const seventh = buildSeventhFromRoot("C", "maj7");
+      expect(seventh.root).toBe("C");
+      expect(seventh.quality).toBe("maj7");
+      expect(seventh.pitchClasses).toEqual(["C", "E", "G", "B"]);
+    });
+  });
+
+  describe("B half-diminished seventh", () => {
+    it("returns B D F A with quality half-dim7", () => {
+      const scale = getMajorScale("C");
+      const seventh = buildSeventhFromScale(scale, 6); // vii
+      expect(seventh.root).toBe("B");
+      expect(seventh.quality).toBe("half-dim7");
+      expect(seventh.pitchClasses).toEqual(["B", "D", "F", "A"]);
+    });
+
+    it("is diatonic vii° in C major from getDiatonicChords", () => {
+      const diatonic = getDiatonicChords("C", "major");
+      const vii = diatonic.sevenths[6];
+      expect(vii.degree).toBe("vii°");
+      expect(vii.seventh.quality).toBe("half-dim7");
+      expect(vii.seventh.pitchClasses).toEqual(["B", "D", "F", "A"]);
+    });
+  });
+});
