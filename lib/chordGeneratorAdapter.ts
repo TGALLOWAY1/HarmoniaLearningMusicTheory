@@ -4,6 +4,9 @@
  * This is the ONLY public entrypoint to ChordGenerator.
  * Never import from ChordGenerator/** outside this file.
  * See docs/chordgenerator-adapter-policy.md
+ *
+ * Note normalization: Tonal note strings (e.g. "C4", "Bb3") are converted to MIDI,
+ * then to Harmonia PitchClass (sharps-only) via midiToPitchClass. Octaves are stripped.
  */
 
 import type { PitchClass } from "./theory/midiUtils";
@@ -16,6 +19,13 @@ import {
   type ComplexityLevel,
 } from "../ChordGenerator/Harmonia Chord Progression Generator/src/lib/theory";
 
+/** Harmonia canonical pitch classes (sharps-only). Reject flats (Bb, Eb, etc.) at runtime. */
+const HARMONIA_PITCH_CLASSES: readonly PitchClass[] = [
+  "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+] as const;
+
+const VALID_PITCH_CLASS_SET = new Set<string>(HARMONIA_PITCH_CLASSES);
+
 /** Harmonia-shaped chord in a progression */
 export type ChordProgressionItem = {
   degree: string;
@@ -23,6 +33,33 @@ export type ChordProgressionItem = {
   quality: string;
   notes: PitchClass[];
 };
+
+/** Validate root is a Harmonia PitchClass. Rejects "Bb", "Eb", etc. */
+function assertValidPitchClass(root: PitchClass): asserts root is PitchClass {
+  if (!VALID_PITCH_CLASS_SET.has(root)) {
+    throw new Error(
+      `Invalid root: "${root}". Harmonia uses sharps-only (C, C#, D, ..., A#, B). Use A# not Bb.`
+    );
+  }
+}
+
+/**
+ * Normalize Tonal note strings to Harmonia PitchClass[] (sharps-only, no octaves).
+ * Preserves chord tone order (root → third → fifth → seventh). Deduplicates by pitch class.
+ */
+function normalizeNotesToPitchClasses(tonalNotes: string[]): PitchClass[] {
+  const seen = new Set<number>();
+  const result: PitchClass[] = [];
+  for (const noteName of tonalNotes) {
+    const midi = Note.midi(noteName);
+    if (typeof midi !== "number") continue;
+    const pcIndex = midi % 12;
+    if (seen.has(pcIndex)) continue;
+    seen.add(pcIndex);
+    result.push(midiToPitchClass(midi));
+  }
+  return result;
+}
 
 /** Map ChordGenerator quality strings to Harmonia-style quality */
 function mapQualityToHarmonia(cgQuality: string): string {
@@ -40,15 +77,6 @@ function mapQualityToHarmonia(cgQuality: string): string {
     "maj(add9)": "maj(add9)",
   };
   return map[cgQuality] ?? cgQuality;
-}
-
-/** Convert Tonal note string (e.g. "Bb4") to Harmonia PitchClass (sharps-only) */
-function noteToPitchClass(noteName: string): PitchClass {
-  const midi = Note.midi(noteName);
-  if (typeof midi !== "number") {
-    throw new Error(`Invalid note: ${noteName}`);
-  }
-  return midiToPitchClass(midi);
 }
 
 /** Map Harmonia ScaleType to ChordGenerator Mode */
@@ -75,6 +103,7 @@ export function generateChordProgression(
   scaleType: ScaleType,
   options?: { mood?: Mood; complexity?: ComplexityLevel }
 ): ChordProgressionItem[] {
+  assertValidPitchClass(root);
   const mode = scaleTypeToMode(scaleType);
   const mood = options?.mood ?? "neutral";
   const complexity = options?.complexity ?? 1;
@@ -85,7 +114,7 @@ export function generateChordProgression(
     degree: chord.roman,
     symbol: chord.symbol,
     quality: mapQualityToHarmonia(inferQualityFromSymbol(chord.symbol)),
-    notes: chord.notes.map((n) => noteToPitchClass(n)),
+    notes: normalizeNotesToPitchClasses(chord.notes),
   }));
 }
 
