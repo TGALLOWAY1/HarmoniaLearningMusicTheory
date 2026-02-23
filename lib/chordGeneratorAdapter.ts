@@ -79,16 +79,24 @@ function mapQualityToHarmonia(cgQuality: string): string {
   return map[cgQuality] ?? cgQuality;
 }
 
-/** Map Harmonia ScaleType to ChordGenerator Mode */
-function scaleTypeToMode(scaleType: ScaleType): "ionian" | "aeolian" | "dorian" | "mixolydian" | "phrygian" {
-  const map: Record<ScaleType, "ionian" | "aeolian" | "dorian" | "mixolydian" | "phrygian"> = {
-    major: "ionian",
-    natural_minor: "aeolian",
-    dorian: "dorian",
-    mixolydian: "mixolydian",
-    phrygian: "phrygian",
-  };
-  return map[scaleType];
+/** ChordGenerator Mode (harmonyEngine.ts) */
+export type ChordGeneratorMode = "ionian" | "aeolian" | "dorian" | "mixolydian" | "phrygian";
+
+/**
+ * Harmonia ScaleType → ChordGenerator Mode mapping.
+ * Used when calling harmonyEngine / theory.ts generateProgressionWithMode.
+ */
+export const SCALE_TYPE_TO_MODE: Record<ScaleType, ChordGeneratorMode> = {
+  major: "ionian",
+  natural_minor: "aeolian",
+  dorian: "dorian",
+  mixolydian: "mixolydian",
+  phrygian: "phrygian",
+};
+
+/** Map Harmonia ScaleType to ChordGenerator Mode for harmonyEngine calls */
+function scaleTypeToMode(scaleType: ScaleType): ChordGeneratorMode {
+  return SCALE_TYPE_TO_MODE[scaleType];
 }
 
 /**
