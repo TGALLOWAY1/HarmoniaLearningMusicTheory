@@ -20,6 +20,7 @@ import {
   buildTriadFromRoot,
   type TriadQuality,
 } from "../lib/theory";
+import { getNeighborsForKey } from "../lib/theory/circle";
 import type { PitchClass } from "../lib/theory/midiUtils";
 import type { ScaleType } from "../lib/theory/types";
 import type {
@@ -34,6 +35,120 @@ import type {
 import type { ScaleMembership } from "../lib/cards/basicCardMeta";
 
 export type SeedMode = "dev" | "prod";
+
+/**
+ * Generate unambiguous circle neighbor cards. Each question has exactly one correct answer.
+ * Uses "clockwise" (V) and "counterclockwise" (IV) for single-correct questions.
+ * Reuses legacy slugs (neighbor-of-X-major) for D and C to avoid orphaned templates on prod upsert.
+ * Adds clockwise/ccw variants for G to cover both directions.
+ */
+function generateCircleNeighborCards(): Array<{
+  slug: string;
+  kind: string;
+  question: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  correctIndex: number;
+  meta: { majorRoot: PitchClass; direction?: "clockwise" | "counterclockwise" };
+  milestoneKey: string;
+}> {
+  const allPitchClasses: PitchClass[] = [
+    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+  ];
+
+  const cards: Array<{
+    slug: string;
+    kind: string;
+    question: string;
+    optionA: string;
+    optionB: string;
+    optionC: string;
+    optionD: string;
+    correctIndex: number;
+    meta: { majorRoot: PitchClass; direction?: "clockwise" | "counterclockwise" };
+    milestoneKey: string;
+  }> = [];
+
+  const makeCard = (
+    slug: string,
+    majorRoot: PitchClass,
+    correct: PitchClass,
+    question: string,
+    direction: "clockwise" | "counterclockwise"
+  ) => {
+    const distractors = allPitchClasses
+      .filter((p) => p !== correct && p !== majorRoot)
+      .slice(0, 3);
+    const options = [correct, ...distractors];
+    return {
+      slug,
+      kind: "circle_neighbor_key",
+      question,
+      optionA: options[0],
+      optionB: options[1],
+      optionC: options[2],
+      optionD: options[3],
+      correctIndex: 0,
+      meta: { majorRoot, direction },
+      milestoneKey: "CIRCLE_OF_FIFTHS",
+    };
+  };
+
+  // D major: clockwise (V=A), counterclockwise (IV=G)
+  const dNeighbors = getNeighborsForKey("D");
+  cards.push(makeCard(
+    "neighbor-of-d-major",
+    "D",
+    dNeighbors.right,
+    "What is the next key clockwise from D major on the circle of fifths?",
+    "clockwise"
+  ));
+  cards.push(makeCard(
+    "neighbor-d-major-counterclockwise",
+    "D",
+    dNeighbors.left,
+    "What is the next key counterclockwise from D major on the circle of fifths?",
+    "counterclockwise"
+  ));
+
+  // C major: clockwise (V=G), counterclockwise (IV=F)
+  const cNeighbors = getNeighborsForKey("C");
+  cards.push(makeCard(
+    "neighbor-of-c-major",
+    "C",
+    cNeighbors.left,
+    "What is the next key counterclockwise from C major on the circle of fifths?",
+    "counterclockwise"
+  ));
+  cards.push(makeCard(
+    "neighbor-c-major-clockwise",
+    "C",
+    cNeighbors.right,
+    "What is the next key clockwise from C major on the circle of fifths?",
+    "clockwise"
+  ));
+
+  // G major: clockwise (V=D), counterclockwise (IV=C)
+  const gNeighbors = getNeighborsForKey("G");
+  cards.push(makeCard(
+    "neighbor-of-g-major",
+    "G",
+    gNeighbors.right,
+    "What is the next key clockwise from G major on the circle of fifths?",
+    "clockwise"
+  ));
+  cards.push(makeCard(
+    "neighbor-g-major-counterclockwise",
+    "G",
+    gNeighbors.left,
+    "What is the next key counterclockwise from G major on the circle of fifths?",
+    "counterclockwise"
+  ));
+
+  return cards;
+}
 
 const STATIC_CARDS = [
   {
@@ -120,42 +235,9 @@ const STATIC_CARDS = [
     meta: { majorRoot: "D" },
     milestoneKey: "CIRCLE_OF_FIFTHS",
   },
-  {
-    slug: "neighbor-of-d-major",
-    kind: "circle_neighbor_key",
-    question: "Which of these is a neighbor (IV or V) of D major on the circle?",
-    optionA: "C",
-    optionB: "G",
-    optionC: "F",
-    optionD: "A",
-    correctIndex: 3,
-    meta: { majorRoot: "D" },
-    milestoneKey: "CIRCLE_OF_FIFTHS",
-  },
-  {
-    slug: "neighbor-of-c-major",
-    kind: "circle_neighbor_key",
-    question: "Which of these is a neighbor (IV or V) of C major on the circle?",
-    optionA: "F",
-    optionB: "G",
-    optionC: "D",
-    optionD: "A",
-    correctIndex: 0,
-    meta: { majorRoot: "C" },
-    milestoneKey: "CIRCLE_OF_FIFTHS",
-  },
-  {
-    slug: "neighbor-of-g-major",
-    kind: "circle_neighbor_key",
-    question: "Which of these is a neighbor (IV or V) of G major on the circle?",
-    optionA: "C",
-    optionB: "D",
-    optionC: "F",
-    optionD: "A",
-    correctIndex: 0,
-    meta: { majorRoot: "G" },
-    milestoneKey: "CIRCLE_OF_FIFTHS",
-  },
+  // Circle neighbor cards: each question has exactly one correct answer.
+  // Clockwise = V, counterclockwise = IV. Generated from getNeighborsForKey.
+  ...generateCircleNeighborCards(),
 ];
 
 const MILESTONES = [
