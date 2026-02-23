@@ -135,10 +135,11 @@ export async function GET(request: Request) {
           maj7: "maj7",
           min7: "min7",
           dom7: "dom7",
-          "half-dim7": "min7", // Approximate as min7 for display
-          dim7: "min7", // Approximate as min7 for display
+          "half-dim7": "half-dim7",
+          dim7: "dim7",
         };
-        const chordQuality = qualityMap[diatonicSeventh.seventh.quality] || "min7";
+        const chordQuality =
+          qualityMap[diatonicSeventh.seventh.quality] || "min7";
         const symbol = formatChordSymbol(
           diatonicSeventh.seventh.root,
           chordQuality
