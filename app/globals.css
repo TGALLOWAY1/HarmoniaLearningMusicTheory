@@ -116,3 +116,322 @@
   animation: key-strong-pop 180ms ease-out;
 }
 
+/* ===== Piano Roll (reference styling) ===== */
+.piano-roll-panel {
+  --pr-bg: #0f0f11;
+  --pr-surface: #18181c;
+  --pr-border: #2a2a30;
+  --pr-white-key: #e8e8ec;
+  --pr-white-key-hover: #f4f4f8;
+  --pr-black-key: #1c1c22;
+  --pr-black-key-hover: #28282f;
+  --pr-accent: #7c6cff;
+  --pr-accent-soft: rgba(124, 108, 255, 0.15);
+  --pr-scale-white: #ffffff;
+  --pr-scale-black: #3d3550;
+  --pr-muted-white: #6a6a72;
+  --pr-muted-black: #141418;
+  --pr-text-dim: #555560;
+  --pr-text-bright: #c8c8d4;
+}
+
+.piano-roll-panel {
+  background: var(--pr-surface);
+  border: 1px solid var(--pr-border);
+  border-radius: 16px;
+  padding: 28px 32px 32px;
+  font-family: var(--font-geist-mono);
+}
+
+.piano-roll-panel .piano-roll-header {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pr-text-dim);
+  margin-bottom: 24px;
+}
+
+.piano-roll-panel .piano-roll-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.piano-roll-panel .piano-roll-control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.piano-roll-panel .piano-roll-control-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pr-text-dim);
+}
+
+.piano-roll-panel .piano-roll-select {
+  background: #111115;
+  border: 1px solid var(--pr-border);
+  border-radius: 6px;
+  color: var(--pr-text-bright);
+  font-family: var(--font-geist-mono);
+  font-size: 12px;
+  padding: 5px 24px 5px 10px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555560'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.piano-roll-panel .piano-roll-select:focus {
+  border-color: var(--pr-accent);
+}
+
+.piano-roll-panel .piano-roll-legend {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.piano-roll-panel .piano-roll-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--pr-text-dim);
+}
+
+.piano-roll-panel .piano-roll-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.piano-roll-panel .piano-roll-legend-swatch.in-scale-white {
+  background: var(--pr-scale-white);
+}
+
+.piano-roll-panel .piano-roll-legend-swatch.in-scale-black {
+  background: var(--pr-accent);
+}
+
+.piano-roll-panel .piano-roll-legend-swatch.out-scale {
+  background: var(--pr-muted-white);
+  opacity: 0.3;
+}
+
+.piano-roll-panel .piano-roll-wrap {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+}
+
+.piano-roll-panel .piano-roll-wrap .piano-roll-keys {
+  position: relative;
+  display: flex;
+  height: 160px;
+  width: max-content;
+  gap: 0;
+}
+
+/* Base key styles */
+.piano-roll-panel .piano-key-white {
+  position: relative;
+  width: 44px;
+  height: 160px;
+  border-radius: 0 0 6px 6px;
+  border: 1px solid #2e2e38;
+  border-top: none;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 10px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.piano-roll-panel .piano-key-black {
+  position: absolute;
+  width: 28px;
+  height: 95px;
+  top: 0;
+  border-radius: 0 0 4px 4px;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.12s, transform 0.08s;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 7px;
+  user-select: none;
+  border: 1px solid transparent;
+  border-top: none;
+}
+
+/* White keys - in scale */
+.piano-roll-panel .piano-key-white.in-scale {
+  background: var(--pr-scale-white);
+  border-color: #c0c0cc;
+  z-index: 1;
+}
+
+.piano-roll-panel .piano-key-white.in-scale:hover {
+  background: #f0f0ff;
+  transform: scaleY(1.01);
+}
+
+.piano-roll-panel .piano-key-white.in-scale:active {
+  background: var(--pr-accent);
+  color: white;
+}
+
+/* White keys - out of scale */
+.piano-roll-panel .piano-key-white.out-scale {
+  background: #2a2a32;
+  border-color: #22222a;
+}
+
+.piano-roll-panel .piano-key-white.out-scale:hover {
+  background: #30303a;
+}
+
+.piano-roll-panel .piano-key-white .piano-key-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.piano-roll-panel .piano-key-white.in-scale .piano-key-label {
+  color: #6a6a80;
+}
+
+.piano-roll-panel .piano-key-white.out-scale .piano-key-label {
+  color: #3a3a44;
+}
+
+/* Black keys - in scale */
+.piano-roll-panel .piano-key-black.in-scale {
+  background: linear-gradient(180deg, #2e2850 0%, #3d3560 100%);
+  border-color: #4d4570;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(124, 108, 255, 0.2);
+}
+
+.piano-roll-panel .piano-key-black.in-scale::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--pr-accent);
+  border-radius: 0 0 2px 2px;
+}
+
+.piano-roll-panel .piano-key-black.in-scale:hover {
+  background: linear-gradient(180deg, #3a3264 0%, #4a4278 100%);
+  transform: scaleY(1.02);
+}
+
+.piano-roll-panel .piano-key-black.in-scale:active {
+  background: var(--pr-accent);
+}
+
+/* Black keys - out of scale */
+.piano-roll-panel .piano-key-black.out-scale {
+  background: linear-gradient(180deg, #141418 0%, #1a1a20 100%);
+  border-color: #0e0e12;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+}
+
+.piano-roll-panel .piano-key-black.out-scale:hover {
+  background: linear-gradient(180deg, #1e1e24 0%, #222228 100%);
+}
+
+.piano-roll-panel .piano-key-black .piano-key-label {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.piano-roll-panel .piano-key-black.in-scale .piano-key-label {
+  color: rgba(180, 170, 255, 0.7);
+}
+
+.piano-roll-panel .piano-key-black.out-scale .piano-key-label {
+  color: #2a2a34;
+}
+
+/* Key flash animation */
+@keyframes piano-key-flash {
+  0% {
+    background: var(--pr-accent);
+  }
+  100% {
+    background: inherit;
+  }
+}
+
+.piano-roll-panel .piano-key-played {
+  animation: piano-key-flash 0.4s ease-out;
+}
+
+/* Scale indicator dots */
+.piano-roll-panel .piano-scale-dot {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--pr-accent);
+}
+
+/* Info bar */
+.piano-roll-panel .piano-roll-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--pr-border);
+  font-size: 11px;
+  color: var(--pr-text-dim);
+}
+
+.piano-roll-panel .piano-roll-note-display {
+  font-size: 13px;
+  color: var(--pr-text-bright);
+  letter-spacing: 0.05em;
+  min-width: 80px;
+}
+
+.piano-roll-panel .piano-roll-note-display span {
+  color: var(--pr-accent);
+}
+
+.piano-roll-panel .piano-roll-scale-notes {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--pr-text-dim);
+}
+
+.piano-roll-panel .piano-roll-scale-notes em {
+  color: #7868dd;
+  font-style: normal;
+}
+

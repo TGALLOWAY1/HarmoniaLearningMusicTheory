@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import {
   getNeighborsForKey,
   getRelativeMinor,
@@ -8,6 +8,7 @@ import {
   getDiatonicChords,
   mapScaleToMidi,
   pitchClassToMidi,
+  midiToNoteName,
   type PitchClass,
   type TriadQuality,
 } from "@/lib/theory";
@@ -191,6 +192,11 @@ export default function CirclePage() {
     },
   ];
 
+  const [lastPlayedNote, setLastPlayedNote] = useState<string | null>(null);
+  const handleKeyPress = useCallback((midiNote: number) => {
+    setLastPlayedNote(midiToNoteName(midiNote));
+  }, []);
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10 lg:flex-row">
@@ -314,12 +320,27 @@ export default function CirclePage() {
           <p className="mt-1 text-xs text-muted">
             Notes in the {selectedRoot} major scale within one octave.
           </p>
-          <div className="mt-4">
+          <div className="mt-4 piano-roll-panel rounded-xl">
             <PianoRoll
               lowestMidiNote={lowestMidiNote}
               highestMidiNote={highestMidiNote}
               highlightLayers={highlightLayers}
+              variant="panel"
+              onKeyPress={handleKeyPress}
             />
+            <div className="piano-roll-info-bar">
+              <div className="piano-roll-note-display">
+                {lastPlayedNote ? (
+                  <span>{lastPlayedNote}</span>
+                ) : (
+                  "—"
+                )}
+              </div>
+              <div className="piano-roll-scale-notes">
+                <em>{selectedRoot} major:</em>{" "}
+                {majorScale.pitchClasses.join("  ·  ")}
+              </div>
+            </div>
           </div>
         </section>
       </div>
