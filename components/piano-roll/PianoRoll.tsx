@@ -5,7 +5,6 @@ import clsx from "clsx";
 import {
   midiToNoteName,
   midiToPitchClass,
-  isBlackKey,
   isWhiteKey,
   generateMidiRange,
 } from "@/lib/theory/midiUtils";
@@ -16,26 +15,34 @@ export type HighlightLayer = {
   midiNotes: number[];
 };
 
+export type PianoRollSize = "sm" | "md" | "lg";
+
 export type PianoRollProps = {
   lowestMidiNote?: number; // default: 48 (C3)
   highestMidiNote?: number; // default: 59 (B3)
   highlightLayers?: HighlightLayer[];
   className?: string;
+  size?: PianoRollSize;
 };
 
-// White key width in Tailwind units (w-10 = 2.5rem = 40px)
-const WHITE_KEY_WIDTH = 40; // pixels
-const BLACK_KEY_WIDTH = 28; // pixels
+const SIZE_CONFIGS = {
+  sm: { whiteWidth: 32, blackWidth: 20, height: 120, blackHeight: 70, labelWhite: "text-[8px]", labelBlack: "text-[7px]" },
+  md: { whiteWidth: 44, blackWidth: 28, height: 160, blackHeight: 95, labelWhite: "text-[10px]", labelBlack: "text-[9px]" },
+  lg: { whiteWidth: 56, blackWidth: 36, height: 200, blackHeight: 120, labelWhite: "text-xs", labelBlack: "text-[10px]" },
+};
 
 export function PianoRoll({
   lowestMidiNote,
   highestMidiNote,
   highlightLayers = [],
   className = "",
+  size = "md",
 }: PianoRollProps) {
   // Default to single canonical octave: C3-B3 (48-59)
   const defaultLowest = lowestMidiNote ?? 48; // C3
   const defaultHighest = highestMidiNote ?? 59; // B3
+
+  const dimensions = SIZE_CONFIGS[size];
 
   // Generate all MIDI notes in range (left to right, lowest to highest)
   const midiNotes = useMemo(() => {
@@ -65,131 +72,105 @@ export function PianoRoll({
     return allHighlighted;
   }, [highlightLayers]);
 
-  // Calculate black key positions relative to white keys
+  // Calculate black key positions relative to white keys (match reference: leftWhiteX + WHITE_KEY_W - BLACK_KEY_W/2)
   const blackKeyPositions = useMemo(() => {
     const positions: Map<number, number> = new Map();
-    
-    blackKeys.forEach((blackMidi) => {
-      // Find the white key index that this black key should be positioned after
-      // Black keys are positioned between their neighboring white keys
-      let whiteKeyIndex = 0;
-      for (let i = 0; i < whiteKeys.length; i++) {
-        if (whiteKeys[i] < blackMidi) {
-          whiteKeyIndex = i;
-        } else {
-          break;
-        }
+    let whiteIdx = 0;
+    midiNotes.forEach((note) => {
+      if (isWhiteKey(note)) {
+        whiteIdx++;
+      } else {
+        const leftWhiteX = (whiteIdx - 1) * dimensions.whiteWidth;
+        const blackX = leftWhiteX + dimensions.whiteWidth - dimensions.blackWidth / 2;
+        positions.set(note, blackX);
       }
-      
-      // Position black key between white keys
-      // For C# (between C and D): position after C (index 0) at ~60% of white key width
-      // For D# (between D and E): position after D (index 1) at ~60% of white key width
-      // etc.
-      const leftOffset = whiteKeyIndex * WHITE_KEY_WIDTH + WHITE_KEY_WIDTH * 0.6 - BLACK_KEY_WIDTH / 2;
-      positions.set(blackMidi, leftOffset);
     });
-    
     return positions;
-  }, [whiteKeys, blackKeys]);
-
-  // Base styles for inactive keys - very muted, low-saturation
-  const whiteKeyBase =
-    "relative flex flex-col items-center justify-end h-full w-10 rounded-md border border-neutral-300 bg-neutral-50 text-[10px] text-neutral-400 transition-all duration-150 ease-out";
-  
-  const blackKeyBase =
-    "absolute flex flex-col items-center justify-end h-20 w-7 rounded-md border border-neutral-500 bg-neutral-800 text-[9px] text-neutral-100 transition-all duration-150 ease-out";
-
-  // Active/highlighted styles for keys - bright, saturated, obvious
-  const whiteKeyActive =
-    "bg-emerald-500 border-emerald-600 shadow-[0_10px_24px_rgba(16,185,129,0.65)] key-strong-active z-10";
-  
-  const blackKeyActive =
-    "bg-emerald-600 border-emerald-700 text-white shadow-[0_12px_30px_rgba(16,185,129,0.8)] key-strong-active";
+  }, [midiNotes, dimensions]);
 
   return (
     <div
-      className={`w-full bg-surface rounded-lg border border-subtle overflow-hidden shadow-sm ${className}`}
+      className={clsx("piano-wrap overflow-x-auto overflow-y-hidden pb-2", className)}
     >
-      <div className="relative h-48 overflow-x-auto">
+      <div
+        className="relative flex"
+        style={{ height: dimensions.height, width: "max-content" }}
+      >
         {/* White keys layer */}
-        <div className="relative flex flex-row h-full">
-          {whiteKeys.map((midiNote) => {
-            const isHighlighted = highlightedSet.has(midiNote);
-            const fullName = midiToNoteName(midiNote);
+        {whiteKeys.map((midiNote) => {
+          const isHighlighted = highlightedSet.has(midiNote);
+          const fullName = midiToNoteName(midiNote);
 
-            const whiteKeyClassName = clsx(
-              whiteKeyBase,
-              "border-r",
-              isHighlighted && whiteKeyActive
-            );
-
-            return (
-              <div key={midiNote} className={whiteKeyClassName}>
-                {/* Key body */}
-                <div className="flex-1" />
-                
-                {/* Container for label and indicator */}
-                <div className="relative pb-1">
-                  {/* Label at bottom - always visible with proper color */}
-                  <span
-                    className={clsx(
-                      "block px-1 text-xs font-mono text-center relative z-30",
-                      isHighlighted ? "font-semibold text-neutral-900" : "text-neutral-400"
-                    )}
-                  >
-                    {fullName}
-                  </span>
-                  
-                  {/* Active indicator bar at bottom, below label */}
-                  {isHighlighted && (
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-6 rounded-full bg-emerald-300 z-20" />
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+          return (
+            <div
+              key={midiNote}
+              className={clsx(
+                "piano-white-key relative flex flex-col items-center justify-end cursor-pointer select-none flex-shrink-0 transition-all duration-[120ms] ease-out",
+                isHighlighted ? "piano-white-in-scale" : "piano-white-out-scale"
+              )}
+              style={{
+                width: dimensions.whiteWidth,
+                height: dimensions.height,
+              }}
+            >
+              <span
+                className={clsx(
+                  "key-label font-medium tracking-wide pointer-events-none leading-none pb-2.5",
+                  dimensions.labelWhite,
+                  isHighlighted ? "text-piano-text-bright" : "text-piano-text-dim"
+                )}
+              >
+                {fullName}
+              </span>
+              {isHighlighted && (
+                <div
+                  className="scale-dot absolute left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-piano-accent"
+                  style={{
+                    bottom: 28,
+                  }}
+                />
+              )}
+            </div>
+          );
+        })}
 
         {/* Black keys layer - absolutely positioned on top */}
-        <div className="absolute top-0 left-0 h-full pointer-events-none z-10">
-          {blackKeys.map((midiNote) => {
-            const isHighlighted = highlightedSet.has(midiNote);
-            const pitchClass = midiToPitchClass(midiNote); // Show only pitch class, no octave
-            const leftOffset = blackKeyPositions.get(midiNote) ?? 0;
+        {blackKeys.map((midiNote) => {
+          const isHighlighted = highlightedSet.has(midiNote);
+          const pitchClass = midiToPitchClass(midiNote);
+          const leftOffset = blackKeyPositions.get(midiNote) ?? 0;
 
-            const blackKeyClassName = clsx(
-              blackKeyBase,
-              "rounded-b pointer-events-auto z-20",
-              isHighlighted ? blackKeyActive : "shadow-sm"
-            );
-
-            return (
-              <div
-                key={midiNote}
-                className={blackKeyClassName}
-                style={{ left: `${leftOffset}px` }}
+          return (
+            <div
+              key={midiNote}
+              className={clsx(
+                "piano-black-key absolute flex flex-col items-center justify-end cursor-pointer select-none z-[2] transition-all duration-[120ms] ease-out",
+                isHighlighted ? "piano-black-in-scale" : "piano-black-out-scale"
+              )}
+              style={{
+                left: leftOffset,
+                width: dimensions.blackWidth,
+                height: dimensions.blackHeight,
+                top: 0,
+              }}
+            >
+              {isHighlighted && (
+                <div
+                  className="absolute top-0 left-0 right-0 h-[3px] rounded-b-sm z-10 bg-piano-accent"
+                />
+              )}
+              <span
+                className={clsx(
+                  "key-label font-medium tracking-wide pointer-events-none leading-none pb-1.5",
+                  dimensions.labelBlack,
+                  isHighlighted ? "text-piano-scale-white opacity-80" : "text-piano-muted-black"
+                )}
               >
-                {/* Container for label and indicator */}
-                <div className="absolute bottom-0 left-0 right-0 pb-1">
-                  {/* Label at bottom */}
-                  <span
-                    className={clsx(
-                      "block px-1 text-[9px] font-mono text-center relative z-30",
-                      isHighlighted ? "font-semibold text-white" : "text-neutral-200"
-                    )}
-                  >
-                    {pitchClass}
-                  </span>
-                  
-                  {/* Active indicator bar at bottom, below label */}
-                  {isHighlighted && (
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-5 rounded-full bg-emerald-300 z-20" />
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                {pitchClass}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

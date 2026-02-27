@@ -34,7 +34,7 @@ function identifyTriadFromNotes(notes: PitchClass[]): { root: PitchClass; qualit
         const triad = buildTriadFromRoot(potentialRoot, quality);
         const triadNotes = new Set(triad.pitchClasses);
         const inputNotes = new Set(notes);
-        if (triadNotes.size === inputNotes.size && [...triadNotes].every((n) => inputNotes.has(n))) {
+        if (triadNotes.size === inputNotes.size && [...triadNotes].every((n) => inputNotes.has(n as PitchClass))) {
           return { root: potentialRoot, quality };
         }
       }

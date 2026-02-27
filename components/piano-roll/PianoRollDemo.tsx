@@ -35,9 +35,10 @@ export function PianoRollDemo() {
   const [keyRoot, setKeyRoot] = useState<PitchClass>("C");
   const [keyType, setKeyType] = useState<ScaleType>("major");
   const [chordDegree, setChordDegree] = useState<number>(0); // 0 = I/i, 1 = ii/ii°, etc.
-  
+
   // State for view mode
   const [viewMode, setViewMode] = useState<PianoRollViewMode>("scale");
+  const [octaveCount, setOctaveCount] = useState<1 | 2>(1);
 
   // Generate scale using theory engine
   const scale = useMemo(() => {
@@ -95,32 +96,41 @@ export function PianoRollDemo() {
     [viewMode, scaleLayer, chordLayer]
   );
 
-  // Set PianoRoll range to single octave using theory utilities
+  // Set PianoRoll range up to 2 octaves using theory utilities
   const lowestMidiNote = useMemo(
     () => pitchClassToMidi("C", DEMO_OCTAVE),
     []
   );
   const highestMidiNote = useMemo(
-    () => pitchClassToMidi("B", DEMO_OCTAVE),
-    []
+    () => pitchClassToMidi("B", DEMO_OCTAVE + octaveCount - 1),
+    [octaveCount]
   );
 
+  // Scale notes string for info bar (e.g. "C Major: C  D  E  F  G  A  B")
+  const scaleNotesDisplay = useMemo(() => {
+    const names = mappedScale.midiNotes.map((midi) => {
+      const pc = midi % 12;
+      const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+      return noteNames[pc];
+    });
+    const scaleLabel = keyType === "major" ? "Major" : "Natural Minor";
+    return `${keyRoot} ${scaleLabel}: ${names.join("  ·  ")}`;
+  }, [mappedScale.midiNotes, keyRoot, keyType]);
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <h3 className="text-xl font-semibold text-foreground">
-          Piano Roll Demo – Single Octave (C3–B3)
-        </h3>
+    <div className="piano-panel max-w-[760px] w-full">
+      <div className="flex items-baseline justify-between mb-6">
+        <span className="piano-panel-title">Piano Roll</span>
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap items-center gap-4 p-4 bg-surface-muted rounded-lg border border-subtle">
+      <div className="flex flex-wrap items-center gap-3 mb-5">
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-foreground">Key:</label>
+          <span className="piano-control-label">Root</span>
           <select
             value={keyRoot}
             onChange={(e) => setKeyRoot(e.target.value as PitchClass)}
-            className="px-2 py-1 text-sm bg-surface border border-subtle rounded text-foreground focus:outline-none focus:ring-2 focus:ring-accent/20"
+            className="piano-select font-mono"
           >
             {["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"].map(
               (pc) => (
@@ -133,41 +143,46 @@ export function PianoRollDemo() {
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-foreground">Type:</label>
-          <button
-            onClick={() => setKeyType("major")}
-            className={`px-3 py-1 text-sm rounded transition-colors ${
-              keyType === "major"
-                ? "bg-accent text-surface"
-                : "bg-surface border border-subtle text-muted hover:bg-surface-muted"
-            }`}
-          >
-            Major
-          </button>
-          <button
-            onClick={() => setKeyType("natural_minor")}
-            className={`px-3 py-1 text-sm rounded transition-colors ${
-              keyType === "natural_minor"
-                ? "bg-accent text-surface"
-                : "bg-surface border border-subtle text-muted hover:bg-surface-muted"
-            }`}
-          >
-            Minor
-          </button>
+          <span className="piano-control-label">Scale</span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setKeyType("major")}
+              className={clsx(
+                "px-3 py-1 text-xs font-mono rounded transition-colors",
+                keyType === "major"
+                  ? "bg-[var(--piano-accent)] text-white"
+                  : "bg-surface border border-subtle text-foreground hover:bg-surface-muted"
+              )}
+            >
+              Major
+            </button>
+            <button
+              onClick={() => setKeyType("natural_minor")}
+              className={clsx(
+                "px-3 py-1 text-xs font-mono rounded transition-colors",
+                keyType === "natural_minor"
+                  ? "bg-[var(--piano-accent)] text-white"
+                  : "bg-surface border border-subtle text-foreground hover:bg-surface-muted"
+              )}
+            >
+              Natural Minor
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-foreground">Chord:</label>
+          <span className="piano-control-label">Chord</span>
           <div className="flex flex-wrap gap-1">
             {diatonicChords.triads.map((diatonicTriad, idx) => (
               <button
                 key={idx}
                 onClick={() => setChordDegree(idx)}
-                className={`px-2 py-1 text-xs rounded transition-colors ${
+                className={clsx(
+                  "px-2 py-1 text-xs font-mono rounded transition-colors min-w-8 text-center",
                   chordDegree === idx
-                    ? "bg-accent text-surface"
-                    : "bg-surface border border-subtle text-muted hover:bg-surface-muted"
-                }`}
+                    ? "bg-[var(--piano-accent)] text-white"
+                    : "bg-surface border border-subtle text-foreground hover:bg-surface-muted"
+                )}
                 title={`${diatonicTriad.triad.root} ${diatonicTriad.triad.quality}`}
               >
                 {diatonicTriad.degree}
@@ -175,64 +190,104 @@ export function PianoRollDemo() {
             ))}
           </div>
         </div>
-      </div>
 
-      {/* View mode toggle */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="text-xs text-muted">
-          <span className="font-medium text-foreground">View mode:</span>{" "}
-          {viewMode === "scale" ? "Scale notes" : "Chord notes"}
-        </div>
-
-        <div className="inline-flex items-center gap-0.5 rounded-full border border-subtle bg-surface-muted p-1 text-xs">
-          <button
-            type="button"
-            onClick={() => setViewMode("scale")}
-            className={clsx(
-              "rounded-full px-3 py-1 transition-colors duration-150",
-              viewMode === "scale"
-                ? "bg-emerald-500 text-white"
-                : "text-muted hover:bg-surface"
-            )}
-          >
-            Scale
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("chord")}
-            className={clsx(
-              "rounded-full px-3 py-1 transition-colors duration-150",
-              viewMode === "chord"
-                ? "bg-emerald-500 text-white"
-                : "text-muted hover:bg-surface"
-            )}
-          >
-            Chord
-          </button>
-        </div>
-      </div>
-      
-      {/* Active layer indicator */}
-      <div className="flex flex-wrap gap-4 text-sm text-muted">
-        {highlightLayers.map((layer) => (
-          <div
-            key={layer.id}
-            className="flex items-center gap-2 px-3 py-1 bg-surface-muted rounded border border-subtle"
-          >
-            <div className="w-3 h-3 rounded bg-emerald-500/40 border border-emerald-500"></div>
-            <span>{layer.label || layer.id}</span>
-            <span className="text-muted text-xs">
-              ({layer.midiNotes.length} notes)
-            </span>
+        <div className="flex flex-wrap items-center gap-4 ml-auto">
+          <div className="flex items-center gap-2">
+            <span className="piano-control-label">Octaves</span>
+            <div className="inline-flex gap-0.5 rounded-md border border-subtle bg-surface-muted p-0.5 text-xs">
+              <button
+                type="button"
+                onClick={() => setOctaveCount(1)}
+                className={clsx(
+                  "rounded px-3 py-1 font-mono transition-colors",
+                  octaveCount === 1
+                    ? "bg-[var(--piano-accent)] text-white"
+                    : "text-muted hover:text-foreground"
+                )}
+              >
+                1
+              </button>
+              <button
+                type="button"
+                onClick={() => setOctaveCount(2)}
+                className={clsx(
+                  "rounded px-3 py-1 font-mono transition-colors",
+                  octaveCount === 2
+                    ? "bg-[var(--piano-accent)] text-white"
+                    : "text-muted hover:text-foreground"
+                )}
+              >
+                2
+              </button>
+            </div>
           </div>
-        ))}
+          <div className="flex items-center gap-2">
+            <span className="piano-control-label">View</span>
+            <div className="inline-flex gap-0.5 rounded-md border border-subtle bg-surface-muted p-0.5 text-xs">
+              <button
+                type="button"
+                onClick={() => setViewMode("scale")}
+                className={clsx(
+                  "rounded px-3 py-1 font-mono transition-colors",
+                  viewMode === "scale"
+                    ? "bg-[var(--piano-accent)] text-white"
+                    : "text-muted hover:text-foreground"
+                )}
+              >
+                Scale
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("chord")}
+                className={clsx(
+                  "rounded px-3 py-1 font-mono transition-colors",
+                  viewMode === "chord"
+                    ? "bg-[var(--piano-accent)] text-white"
+                    : "text-muted hover:text-foreground"
+                )}
+              >
+                Chord
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-      
+
+      {/* Legend */}
+      <div className="flex gap-5 mb-5">
+        <div className="flex items-center gap-1.5 text-[11px] text-[var(--piano-text-dim)]">
+          <div className="piano-legend-swatch in-scale-white" />
+          <span>In scale (white)</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px] text-[var(--piano-text-dim)]">
+          <div className="piano-legend-swatch in-scale-black" />
+          <span>In scale (black)</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px] text-[var(--piano-text-dim)]">
+          <div className="piano-legend-swatch out-scale" />
+          <span>Out of scale</span>
+        </div>
+      </div>
+
       <PianoRoll
         lowestMidiNote={lowestMidiNote}
         highestMidiNote={highestMidiNote}
         highlightLayers={highlightLayers}
       />
+
+      {/* Info bar */}
+      <div className="flex items-center justify-between mt-6 pt-4 border-t border-[var(--piano-border)] text-[11px] text-[var(--piano-text-dim)]">
+        <div className="text-[13px] text-[var(--piano-text-bright)] tracking-wide min-w-[80px]">
+          <span className="text-[var(--piano-accent)]">
+            {viewMode === "scale"
+              ? `${keyRoot} ${keyType === "major" ? "Major" : "Natural Minor"}`
+              : highlightLayers[0]?.label ?? "—"}
+          </span>
+        </div>
+        <div className="text-[10px] tracking-wide text-[var(--piano-text-dim)]">
+          <em className="text-[#7868dd] not-italic">{scaleNotesDisplay}</em>
+        </div>
+      </div>
     </div>
   );
 }

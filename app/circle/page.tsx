@@ -191,6 +191,12 @@ export default function CirclePage() {
     },
   ];
 
+  const scaleNotesDisplay = useMemo(() => {
+    const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const names = mappedScale.midiNotes.map((midi) => noteNames[midi % 12]);
+    return `${selectedRoot} Major: ${names.join("  ·  ")}`;
+  }, [mappedScale.midiNotes, selectedRoot]);
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10 lg:flex-row">
@@ -307,19 +313,46 @@ export default function CirclePage() {
           </div>
         </section>
 
-        <section className="flex-1 rounded-2xl border border-subtle bg-surface p-4 shadow-sm">
-          <h2 className="text-sm font-medium text-foreground">
-            Piano roll preview
-          </h2>
-          <p className="mt-1 text-xs text-muted">
-            Notes in the {selectedRoot} major scale within one octave.
-          </p>
-          <div className="mt-4">
+        <section className="flex-1">
+          <div className="piano-panel max-w-[760px] w-full">
+            <div className="flex items-baseline justify-between mb-6">
+              <span className="piano-panel-title">Piano Roll</span>
+            </div>
+            <p className="text-[11px] text-[var(--piano-text-dim)] mb-5">
+              Notes in the {selectedRoot} major scale within one octave.
+            </p>
+            {/* Legend */}
+            <div className="flex gap-5 mb-5">
+              <div className="flex items-center gap-1.5 text-[11px] text-[var(--piano-text-dim)]">
+                <div className="piano-legend-swatch in-scale-white" />
+                <span>In scale (white)</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-[var(--piano-text-dim)]">
+                <div className="piano-legend-swatch in-scale-black" />
+                <span>In scale (black)</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-[var(--piano-text-dim)]">
+                <div className="piano-legend-swatch out-scale" />
+                <span>Out of scale</span>
+              </div>
+            </div>
             <PianoRoll
               lowestMidiNote={lowestMidiNote}
               highestMidiNote={highestMidiNote}
               highlightLayers={highlightLayers}
             />
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-[var(--piano-border)] text-[11px] text-[var(--piano-text-dim)]">
+              <div className="text-[13px] text-[var(--piano-text-bright)] tracking-wide">
+                <span className="text-[var(--piano-accent)]">
+                  {selectedRoot} Major
+                </span>
+              </div>
+              <div className="text-[10px] tracking-wide">
+                <em className="text-[#7868dd] not-italic">
+                  {scaleNotesDisplay}
+                </em>
+              </div>
+            </div>
           </div>
         </section>
       </div>

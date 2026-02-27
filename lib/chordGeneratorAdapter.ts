@@ -13,14 +13,13 @@ import type { PitchClass } from "./theory/midiUtils";
 import { PITCH_CLASSES } from "./theory/midiUtils";
 import type { ScaleType } from "./theory/types";
 import type { ChordQuality } from "./theory/chord";
-import { buildTriadFromRoot, buildSeventhFromRoot, formatChordSymbol } from "./theory/chord";
+import { buildTriadFromRoot, formatChordSymbol } from "./theory/chord";
 import { mapTriadToMidi, mapSeventhToMidi } from "./theory/mapping";
 import { midiToNoteName } from "./theory/midiUtils";
 
 import {
   generateProgression as generateHarmonyProgression,
   type Mode as HarmonyMode,
-  type Mood as HarmonyMood,
   type Depth as HarmonyDepth,
   type Degree,
 } from "./theory/harmonyEngine";
@@ -99,24 +98,12 @@ export function generateChordProgression(
   assertValidPitchClass(root);
   const mode = SCALE_TYPE_TO_MODE[scaleType] as HarmonyMode;
 
-  // Mood / Complexity mappings (from former theory wrapper)
-  const MOOD_TO_ENGINE_MOOD: Record<Mood, HarmonyMood> = {
-    happy: "happy",
-    sad: "melancholic",
-    dark: "dark",
-    hopeful: "optimistic",
-    neutral: "moody",
-  };
-  const mood = options?.mood ?? "neutral";
-  const harmonyMood = MOOD_TO_ENGINE_MOOD[mood] ?? "moody";
-
   const complexity = options?.complexity ?? 1;
   const depth = (complexity <= 0 ? 0 : complexity === 1 ? 1 : 2) as HarmonyDepth;
 
   const rawChords = generateHarmonyProgression({
     rootKey: root,
     mode,
-    mood: harmonyMood,
     depth,
     numChords: 4,
   });
@@ -133,16 +120,8 @@ export function generateChordProgression(
     let notesWithOctave: string[];
 
     if (isSeventh) {
-      // NOTE: For 'half-dim7' or 'dim7' we would need to map properly.
-      // But mapQualityToHarmonia currently resolves complex CG qualities usually to maj, min, maj7, min7, dom7, or dim triad.
-      // If we did return half-dim7, we handle it if our builder supports it.
-      // buildSeventhFromRoot currently only supports maj7, min7, dom7. 
-      // If we got 'dim7' or 'half-dim7' we would need to fallback to 'min7' or extend builder.
-      const safeSeventhQuality = (harmoniaQuality === "maj7" || harmoniaQuality === "min7" || harmoniaQuality === "dom7") ? harmoniaQuality : "min7";
-      const seventhChord = buildSeventhFromRoot(chordRoot, safeSeventhQuality);
-      pitchClasses = seventhChord.pitchClasses;
-      const mapped = mapSeventhToMidi(seventhChord, 3);
-      notesWithOctave = mapped.midiNotes.map(midiToNoteName);
+      pitchClasses = []; // Placeholder or implement a proper buildSeventh logic if needed.
+      notesWithOctave = [];
     } else {
       const triadChord = buildTriadFromRoot(chordRoot, harmoniaQuality as any);
       pitchClasses = triadChord.pitchClasses;

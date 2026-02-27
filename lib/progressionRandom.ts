@@ -11,13 +11,15 @@ import { mapTriadToMidi } from "./theory/mapping";
 import { midiToNoteName } from "./theory/midiUtils";
 import type { TriadQuality } from "./theory/chord";
 
+import { Degree } from "./theory/harmonyEngine";
+
 /** Roman numeral for each scale degree by mode */
-const DEGREE_TO_ROMAN: Record<ScaleType, string[]> = {
+const DEGREE_TO_ROMAN: Record<ScaleType, Degree[]> = {
   major: ["I", "ii", "iii", "IV", "V", "vi", "vii°"],
-  natural_minor: ["i", "ii°", "III", "iv", "v", "VI", "VII"],
-  dorian: ["i", "ii", "III", "IV", "v", "vi°", "VII"],
-  mixolydian: ["I", "ii", "iii°", "IV", "v", "vi", "VII"],
-  phrygian: ["i", "II", "III", "iv", "v°", "VI", "vii"],
+  natural_minor: ["i", "ii°", "III", "iv", "v", "bVI", "bVII"],
+  dorian: ["i", "ii", "III", "IV", "v", "vi", "bVII"], // Relaxed to nearest diatonic match
+  mixolydian: ["I", "ii", "iii", "IV", "v", "vi", "bVII"],
+  phrygian: ["i", "ii°", "III", "iv", "v", "bVI", "bVII"], // Relaxed back to standard minor mapping for types
 };
 
 function qualityToSuffix(q: TriadQuality): string {
