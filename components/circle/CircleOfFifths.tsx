@@ -3,7 +3,7 @@
 import { getCircleNodes, getNeighborsForKey } from "@/lib/theory";
 import type { PitchClass } from "@/lib/theory";
 import clsx from "clsx";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 
 export type CircleOfFifthsProps = {
   selectedRoot: PitchClass;
@@ -45,9 +45,7 @@ export function CircleOfFifths({
 
   const STEP = 360 / nodes.length; // 30 degrees per node
 
-  // Convert SVG coordinates to pixel coordinates for tooltip positioning
-  // The SVG viewBox is 200x200, and the rendered size is 288x288 (h-72 w-72 = 18rem = 288px)
-  const SVG_TO_PIXEL = 288 / 200;
+  const svgRef = useRef<SVGSVGElement>(null);
 
   const handleMouseEnter = (
     root: PitchClass,
@@ -56,11 +54,17 @@ export function CircleOfFifths({
   ) => {
     if (!statsByRoot) return;
     setHoveredRoot(root);
-    // Convert SVG coordinates to pixel coordinates relative to the container
-    // Position tooltip offset from the key label
-    const pixelX = svgX * SVG_TO_PIXEL;
-    const pixelY = svgY * SVG_TO_PIXEL;
-    setHoveredPosition({ x: pixelX, y: pixelY });
+
+    // Calculate tooltip position dynamically based on actual SVG rendered size
+    if (svgRef.current) {
+      const rect = svgRef.current.getBoundingClientRect();
+      const scaleX = rect.width / 200;
+      const scaleY = rect.height / 200;
+      setHoveredPosition({ x: svgX * scaleX, y: svgY * scaleY });
+    } else {
+      // Fallback
+      setHoveredPosition({ x: svgX * (288 / 200), y: svgY * (288 / 200) });
+    }
   };
 
   const handleMouseLeave = () => {
@@ -69,10 +73,11 @@ export function CircleOfFifths({
   };
 
   return (
-    <div className="relative mx-auto flex items-center justify-center">
+    <div className="relative mx-auto flex w-full max-w-sm aspect-square items-center justify-center">
       <svg
+        ref={svgRef}
         viewBox="0 0 200 200"
-        className="h-72 w-72"
+        className="w-full h-full"
         onMouseLeave={handleMouseLeave}
       >
         {nodes.map((node, index) => {
@@ -108,15 +113,15 @@ export function CircleOfFifths({
 
           let circleFill: string;
           let baseOpacity: number;
-          
+
           if (isHighlighted) {
-            circleFill = "rgba(16, 185, 129, 0.7)"; // emerald-500/70
+            circleFill = "var(--music-highlight-bg)";
             baseOpacity = 0.7; // Highlight overrides mastery
           } else if (isSelected) {
             circleFill = "var(--foreground)";
             baseOpacity = 1.0; // Selection overrides mastery
           } else if (isNeighbor) {
-            circleFill = "rgba(107, 107, 107, 0.4)"; // muted/40
+            circleFill = "var(--music-neighbor-bg)";
             baseOpacity = 0.4; // Neighbor state overrides mastery
           } else {
             // Apply mastery-based styling for unselected keys
@@ -143,13 +148,13 @@ export function CircleOfFifths({
           // Relative minor text fill
           let minorTextFill: string;
           if (isHighlighted) {
-            minorTextFill = "rgba(245, 245, 240, 0.8)"; // background/80
+            minorTextFill = "var(--music-minor-highlight)";
           } else if (isSelected) {
-            minorTextFill = "rgba(245, 245, 240, 0.7)"; // background/70
+            minorTextFill = "var(--music-minor-selected)";
           } else if (isNeighbor) {
             minorTextFill = "var(--muted)";
           } else {
-            minorTextFill = "rgba(107, 107, 107, 0.6)"; // muted/60
+            minorTextFill = "var(--music-minor-muted)";
           }
 
           return (

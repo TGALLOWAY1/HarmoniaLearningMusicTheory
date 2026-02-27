@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PianoRollDemo } from "@/components/piano-roll/PianoRollDemo";
 
 export default function HomePage() {
   return (
@@ -83,14 +82,15 @@ export default function HomePage() {
               badge="Analytics"
               description="Check accuracy, review load, and recent activity to see how your theory practice is trending over time."
             />
-          </div>
-        </section>
-      </div>
 
-      {/* Piano Roll Demo - wider container */}
-      <div className="max-w-7xl mx-auto px-6 pb-16">
-        <section className="space-y-4">
-          <PianoRollDemo />
+            {/* Piano Roll Explorer */}
+            <HomeNavCard
+              href="/piano-roll"
+              title="Piano roll explorer"
+              badge="Interactive"
+              description="Visualize scales, diatonic chords, and intervals directly on the piano keys across different modes."
+            />
+          </div>
         </section>
       </div>
     </main>

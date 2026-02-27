@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
 import ScaleSelector from "@/components/progression/ScaleSelector";
-import MoodControl from "@/components/progression/MoodControl";
 import ComplexitySlider from "@/components/progression/ComplexitySlider";
 import ProgressionDisplay from "@/components/progression/ProgressionDisplay";
+import TriadPalette from "@/components/progression/TriadPalette";
 import ActionButtons from "@/components/progression/ActionButtons";
 import { useProgressionStore } from "@/lib/state/progressionStore";
 import { ChevronLeft, Download, Play, Pause } from "lucide-react";
@@ -20,6 +20,8 @@ export default function ProgressionPage() {
     setIsPlaying,
     exportMidi
   } = useProgressionStore();
+
+  const [playbackIndex, setPlaybackIndex] = useState<number | null>(null);
 
   const synthRef = useRef<Tone.PolySynth | null>(null);
   const playbackIndexRef = useRef(0);
@@ -55,6 +57,7 @@ export default function ProgressionPage() {
       }
       Tone.Transport.stop();
       playbackIndexRef.current = 0;
+      setPlaybackIndex(null);
       if (synthRef.current) synthRef.current.releaseAll();
       return;
     }
@@ -68,6 +71,11 @@ export default function ProgressionPage() {
       synthRef.current.releaseAll(time);
       synthRef.current.triggerAttack(notes, time + 0.05);
 
+      // Schedule the UI update safely on the main thread precisely when the audio hits
+      Tone.Draw.schedule(() => {
+        setPlaybackIndex(idx);
+      }, time);
+
       playbackIndexRef.current = (idx + 1) % currentProgression.chords.length;
     }, "1n", 0);
 
@@ -78,6 +86,7 @@ export default function ProgressionPage() {
       if (scheduleIdRef.current !== null) {
         Tone.Transport.clear(scheduleIdRef.current);
       }
+      Tone.Draw.cancel(0);
     };
   }, [isPlaying, currentProgression]);
 
@@ -106,7 +115,7 @@ export default function ProgressionPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-12 max-w-4xl">
+      <main className="container mx-auto px-6 py-12 max-w-6xl">
         <section className="mb-12 text-center flex flex-col items-center gap-8">
           <div>
             <h2 className="text-3xl font-light mb-2">Generate Progressions</h2>
@@ -116,18 +125,16 @@ export default function ProgressionPage() {
           <ScaleSelector />
         </section>
 
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-          <div className="bg-surface rounded-3xl p-8 border border-border-subtle shadow-sm hover:shadow-md transition-shadow">
-            <MoodControl />
-          </div>
+        <section className="mb-16">
           <div className="bg-surface rounded-3xl p-8 border border-border-subtle shadow-sm hover:shadow-md transition-shadow">
             <ComplexitySlider />
           </div>
         </section>
 
-        <section className="flex flex-col items-center gap-12">
-          <ProgressionDisplay />
-          <div className="flex items-center gap-6">
+        <section className="flex flex-col items-center gap-12 w-full">
+          <ProgressionDisplay activeIndex={playbackIndex} />
+
+          <div className="flex items-center gap-6 w-full justify-center">
             <ActionButtons />
             <div className="flex items-center gap-3 bg-surface border border-border-subtle rounded-full px-6 py-3 shadow-sm">
               <span className="text-xs font-medium text-muted uppercase">BPM</span>
@@ -142,6 +149,8 @@ export default function ProgressionPage() {
               <span className="text-sm font-medium w-8 text-center">{bpm}</span>
             </div>
           </div>
+
+          <TriadPalette />
         </section>
       </main>
     </div>
