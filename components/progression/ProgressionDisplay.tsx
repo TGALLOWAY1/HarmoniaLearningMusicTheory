@@ -119,7 +119,11 @@ export default function ProgressionDisplay({ activeIndex = null, selectedIndex =
                         isSelected={index === selectedIndex}
                         onClick={(idx) => {
                             onSelectChord?.(idx);
-                            onPlayChord?.(chord.notes.map(n => `${n}3`), idx);
+                            const previewNotes =
+                                chord.notesWithOctave && chord.notesWithOctave.length > 0
+                                    ? chord.notesWithOctave
+                                    : chord.notes.map(n => `${n}3`);
+                            onPlayChord?.(previewNotes, idx);
                         }}
                         onRemove={removeChord}
                         onLock={toggleChordLock}

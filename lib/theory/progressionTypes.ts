@@ -5,6 +5,8 @@ export interface Chord {
     symbol: string;
     notes: string[];
     romanNumeral: string;
+    notesWithOctave?: string[];
+    midiNotes?: number[];
     root?: PitchClass;
     quality?: ChordQuality;
     isLocked?: boolean;

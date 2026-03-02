@@ -1,11 +1,13 @@
 import { create } from "zustand";
 import { Progression, Chord } from "../theory/progressionTypes";
-import { generateProgression, Mode, Depth, Degree } from "../theory/harmonyEngine";
+import { Mode, Depth, Degree } from "../theory/harmonyEngine";
 import { formatChordSymbol, buildTriadFromRoot, TriadQuality } from "../theory/chord";
-import { normalizeToPitchClass, pitchClassesToMidi } from "../theory/midiUtils";
+import { normalizeToPitchClass, pitchClassesToMidi, midiToPitchClass } from "../theory/midiUtils";
 import { getScaleDefinition } from "../theory/scale";
 import { ScaleType } from "../theory/types";
 import { progressionToMidi } from "../progressionMidiExport";
+import { generateFromRegistry } from "../music/generators";
+import type { AdvancedProgressionResult } from "../music/generators";
 
 interface ProgressionState {
     currentProgression: Progression | null;
@@ -36,6 +38,7 @@ interface ProgressionState {
     toggleChordLock: (index: number) => void;
     refreshChord: (index: number) => void;
     setChordQuality: (index: number, quality: string) => void;
+    applyAdvancedProgression: (result: AdvancedProgressionResult) => void;
 }
 
 const DEGREE_MAP: Record<Degree, number> = {
@@ -199,11 +202,14 @@ export const useProgressionStore = create<ProgressionState>((set, get) => ({
         const rootPC = normalizeToPitchClass(rootKey) || "C";
 
         // Generate a small batch and pick a random new chord (skipping the first tonic one)
-        const generated = generateProgression({
-            rootKey: rootPC,
-            mode,
-            depth,
-            numChords: 5,
+        const generated = generateFromRegistry({
+            generatorId: "simple",
+            options: {
+                rootKey: rootPC,
+                mode,
+                depth,
+                numChords: 5,
+            },
         });
         const gc = generated[Math.floor(Math.random() * 4) + 1];
 
@@ -267,15 +273,43 @@ export const useProgressionStore = create<ProgressionState>((set, get) => ({
         });
     },
 
+    applyAdvancedProgression: (result) => {
+        const chords: Chord[] = result.chords.map((voiced) => {
+            const pitchClasses = Array.from(new Set(voiced.midi.map((midi) => midiToPitchClass(midi))));
+            const root = pitchClasses[0];
+
+            return {
+                symbol: voiced.symbol,
+                notes: pitchClasses,
+                romanNumeral: voiced.degreeLabel,
+                notesWithOctave: voiced.notes,
+                midiNotes: voiced.midi,
+                root,
+            };
+        });
+
+        const progression: Progression = {
+            id: `prog-advanced-${Date.now()}`,
+            chords,
+            timestamp: Date.now(),
+        };
+
+        set({ currentProgression: progression });
+        get().addToHistory(progression);
+    },
+
     generateNew: () => {
         const { rootKey, mode, depth, numChords } = get();
         const rootPC = normalizeToPitchClass(rootKey) || "C";
 
-        const generated = generateProgression({
-            rootKey: rootPC,
-            mode,
-            depth,
-            numChords,
+        const generated = generateFromRegistry({
+            generatorId: "simple",
+            options: {
+                rootKey: rootPC,
+                mode,
+                depth,
+                numChords,
+            },
         });
 
         // Map engine modes to scale types for definition lookup
@@ -337,7 +371,9 @@ export const useProgressionStore = create<ProgressionState>((set, get) => ({
 
         const midiChords = currentProgression.chords.map(c => ({
             symbol: c.symbol,
-            notesWithOctave: c.notes.map(n => `${n}3`)
+            notesWithOctave: c.notesWithOctave && c.notesWithOctave.length > 0
+                ? c.notesWithOctave
+                : c.notes.map(n => `${n}3`)
         }));
 
         const blob = progressionToMidi(midiChords, bpm);

@@ -9,8 +9,47 @@ import { VerticalPianoRoll } from "@/components/progression/VerticalPianoRoll";
 import TriadPalette from "@/components/progression/TriadPalette";
 import ActionButtons from "@/components/progression/ActionButtons";
 import { useProgressionStore } from "@/lib/state/progressionStore";
-import { ChevronLeft, Download, Play, Pause } from "lucide-react";
+import { ChevronLeft, Download } from "lucide-react";
 import Link from "next/link";
+
+type SoundPresetId = "clean" | "mellow" | "bell" | "bright";
+
+const SOUND_PRESETS: Array<{ id: SoundPresetId; label: string }> = [
+  { id: "clean", label: "Clean (Sine)" },
+  { id: "mellow", label: "Mellow (Triangle)" },
+  { id: "bell", label: "Bell (Short)" },
+  { id: "bright", label: "Bright (Square)" },
+];
+
+function createSynthForPreset(preset: SoundPresetId): Tone.PolySynth {
+  switch (preset) {
+    case "mellow":
+      return new Tone.PolySynth(Tone.Synth, {
+        volume: -12,
+        oscillator: { type: "triangle" },
+        envelope: { attack: 0.03, decay: 0.14, sustain: 0.58, release: 0.45 },
+      }).toDestination();
+    case "bell":
+      return new Tone.PolySynth(Tone.Synth, {
+        volume: -11,
+        oscillator: { type: "sine" },
+        envelope: { attack: 0.005, decay: 0.18, sustain: 0.18, release: 0.22 },
+      }).toDestination();
+    case "bright":
+      return new Tone.PolySynth(Tone.Synth, {
+        volume: -16,
+        oscillator: { type: "square" },
+        envelope: { attack: 0.01, decay: 0.12, sustain: 0.35, release: 0.3 },
+      }).toDestination();
+    case "clean":
+    default:
+      return new Tone.PolySynth(Tone.Synth, {
+        volume: -11,
+        oscillator: { type: "sine" },
+        envelope: { attack: 0.01, decay: 0.12, sustain: 0.5, release: 0.35 },
+      }).toDestination();
+  }
+}
 
 export default function ProgressionPage() {
   const {
@@ -24,6 +63,7 @@ export default function ProgressionPage() {
 
   const [playbackIndex, setPlaybackIndex] = useState<number | null>(null);
   const [selectedChordIndex, setSelectedChordIndex] = useState<number | null>(null);
+  const [soundPreset, setSoundPreset] = useState<SoundPresetId>("clean");
 
   const handlePlayNote = (noteWithOctave: string) => {
     if (synthRef.current) {
@@ -53,19 +93,16 @@ export default function ProgressionPage() {
 
   // Audio initialization
   useEffect(() => {
-    const synth = new Tone.PolySynth(Tone.Synth, {
-      volume: -10,
-      oscillator: { type: "triangle" },
-      envelope: { attack: 0.1, decay: 0.2, sustain: 0.8, release: 1.5 }
-    }).toDestination();
+    const synth = createSynthForPreset(soundPreset);
 
     synthRef.current = synth;
 
     return () => {
+      synth.releaseAll();
       synth.dispose();
       synthRef.current = null;
     };
-  }, []);
+  }, [soundPreset]);
 
   // Transport sync
   useEffect(() => {
@@ -91,9 +128,11 @@ export default function ProgressionPage() {
       const chord = currentProgression.chords[idx];
       if (!chord || !synthRef.current) return;
 
-      const notes = chord.notes.map(n => `${n}3`);
-      synthRef.current.releaseAll(time);
-      synthRef.current.triggerAttack(notes, time + 0.05);
+      const notes =
+        chord.notesWithOctave && chord.notesWithOctave.length > 0
+          ? chord.notesWithOctave
+          : chord.notes.map(n => `${n}3`);
+      synthRef.current.triggerAttackRelease(notes, "1n", time);
 
       // Schedule the UI update safely on the main thread precisely when the audio hits
       Tone.Draw.schedule(() => {
@@ -179,6 +218,20 @@ export default function ProgressionPage() {
 
           <div className="flex items-center gap-6 w-full justify-center">
             <ActionButtons />
+            <div className="flex items-center gap-3 bg-surface border border-border-subtle rounded-full px-6 py-3 shadow-sm">
+              <span className="text-xs font-medium text-muted uppercase">Sound</span>
+              <select
+                value={soundPreset}
+                onChange={(e) => setSoundPreset(e.target.value as SoundPresetId)}
+                className="bg-transparent text-sm font-medium outline-none focus:ring-2 focus:ring-border-subtle rounded-md px-1"
+              >
+                {SOUND_PRESETS.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {preset.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="flex items-center gap-3 bg-surface border border-border-subtle rounded-full px-6 py-3 shadow-sm">
               <span className="text-xs font-medium text-muted uppercase">BPM</span>
               <input
