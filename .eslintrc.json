@@ -1,24 +1,3 @@
 {
-  "extends": "next/core-web-vitals",
-  "rules": {
-    "no-restricted-imports": [
-      "error",
-      {
-        "patterns": [
-          {
-            "group": ["**/ChordGenerator/**"],
-            "message": "Never import from ChordGenerator/** outside lib/chordGeneratorAdapter.ts. See docs/chordgenerator-adapter-policy.md."
-          }
-        ]
-      }
-    ]
-  },
-  "overrides": [
-    {
-      "files": ["lib/chordGeneratorAdapter.ts"],
-      "rules": {
-        "no-restricted-imports": "off"
-      }
-    }
-  ]
+  "extends": "next/core-web-vitals"
 }

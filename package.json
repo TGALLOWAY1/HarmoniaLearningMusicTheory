@@ -9,32 +9,16 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate:dev": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy",
-    "seed:dev": "tsx prisma/seed.dev.ts",
-    "seed:prod": "tsx prisma/seed.prod.ts",
-    "db:patch:meta": "tsx scripts/patchTemplateMeta.ts"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.dev.ts"
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@prisma/adapter-better-sqlite3": "^7.4.1",
-    "@prisma/adapter-pg": "^7.4.1",
-    "@prisma/client": "^7.0.1",
     "@tonaljs/tonal": "^4.10.0",
     "@tonejs/midi": "^2.0.28",
-    "better-sqlite3": "^12.6.2",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.3",
     "geist": "^1.5.1",
     "lucide-react": "^0.555.0",
     "next": "^14.2.5",
-    "pg": "^8.18.0",
-    "prisma": "^7.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^3.5.0",
@@ -42,9 +26,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.14.12",
-    "@types/pg": "^8.16.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitest/coverage-v8": "^4.0.18",
