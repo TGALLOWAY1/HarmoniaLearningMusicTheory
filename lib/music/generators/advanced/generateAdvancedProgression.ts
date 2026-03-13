@@ -36,19 +36,39 @@ const MAJORISH_ROMANS = ["I", "ii", "iii", "IV", "V", "vi", "vii°"] as const;
 const MINORISH_ROMANS = ["i", "ii°", "III", "iv", "v", "bVI", "bVII"] as const;
 
 const MAJORISH_TEMPLATES: number[][] = [
-  [0, 3, 4, 0],
-  [0, 5, 3, 4],
-  [0, 1, 4, 0],
-  [0, 5, 1, 4],
-  [0, 3, 1, 4],
+  [0, 3, 4, 0],   // I - IV - V - I (authentic cadence)
+  [0, 5, 3, 4],   // I - vi - IV - V (50s progression)
+  [0, 1, 4, 0],   // I - ii - V - I (jazz ii-V-I)
+  [0, 5, 1, 4],   // I - vi - ii - V (circle of fifths descent)
+  [0, 3, 1, 4],   // I - IV - ii - V (subdominant approach)
+  [0, 4, 5, 3],   // I - V - vi - IV (pop/axis progression)
+  [0, 5, 3, 4],   // I - vi - IV - V (doo-wop)
+  [5, 3, 0, 4],   // vi - IV - I - V (modern pop)
+  [0, 2, 5, 3],   // I - iii - vi - IV (emotional pop)
+  [0, 3, 5, 4],   // I - IV - vi - V
+  [0, 4, 3, 0],   // I - V - IV - I (plagal rock)
+  [0, 1, 5, 4],   // I - ii - vi - V
+  [0, 3, 0, 4],   // I - IV - I - V (blues-influenced)
+  [0, 2, 3, 4],   // I - iii - IV - V (ascending motion)
+  [0, 5, 4, 3],   // I - vi - V - IV (descending)
 ];
 
 const MINORISH_TEMPLATES: number[][] = [
-  [0, 5, 3, 6],
-  [0, 3, 6, 4],
-  [0, 6, 5, 4],
-  [0, 5, 1, 4],
-  [0, 3, 4, 0],
+  [0, 5, 3, 6],   // i - bVI - iv - bVII
+  [0, 3, 6, 4],   // i - iv - bVII - v
+  [0, 6, 5, 4],   // i - bVII - bVI - v
+  [0, 5, 1, 4],   // i - bVI - ii° - v
+  [0, 3, 4, 0],   // i - iv - v - i
+  [0, 6, 5, 0],   // i - bVII - bVI - i
+  [0, 5, 6, 0],   // i - bVI - bVII - i (Andalusian-ish)
+  [0, 3, 6, 5],   // i - iv - bVII - bVI
+  [0, 2, 5, 4],   // i - III - bVI - v (modal)
+  [0, 6, 3, 4],   // i - bVII - iv - v
+  [0, 3, 5, 6],   // i - iv - bVI - bVII
+  [0, 4, 5, 0],   // i - v - bVI - i
+  [0, 2, 6, 3],   // i - III - bVII - iv
+  [5, 6, 0, 4],   // bVI - bVII - i - v
+  [0, 3, 0, 6],   // i - iv - i - bVII
 ];
 
 function clampVoiceRange(low: number, high: number): { low: number; high: number } {
@@ -312,6 +332,27 @@ export function generateAdvancedProgression(
   planned = applyTritoneSubstitutions(planned, options, random);
   planned = insertPassingDiminished(planned, options, random);
   planned = insertSuspensions(planned, options, random);
+
+  // Resolution heuristic: ensure the progression ends on tonic (I/i) for a sense of completion.
+  // If the last diatonic chord is not the tonic, replace it with the tonic chord.
+  if (planned.length > 0) {
+    const lastChord = planned[planned.length - 1];
+    // Only apply to diatonic/functional-substitution chords (not passing/suspension)
+    if (lastChord.kind === "diatonic" || lastChord.kind === "functional-substitution") {
+      const tonicRoot = scale.pitchClasses[0];
+      if (lastChord.root !== tonicRoot) {
+        planned[planned.length - 1] = buildDiatonicChordPlan({
+          root: tonicRoot,
+          degreeLabel: romans[0],
+          degreeIndex: 0,
+          scale,
+          complexity: options.complexity,
+          random,
+          kind: "diatonic",
+        });
+      }
+    }
+  }
 
   planned = limitLength(planned, Math.max(numChords, 4) + 4);
 

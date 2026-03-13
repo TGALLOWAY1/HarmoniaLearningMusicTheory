@@ -1,13 +1,24 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import { Breadcrumb } from "@/components/navigation/Breadcrumb";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Harmonia - Music Theory Learning App",
-  description: "Learn music theory with interactive piano-roll visualization",
+  title: "Harmonia — Chord Progression Generator",
+  description:
+    "Generate musically coherent chord progressions in any key and mode. Hear them instantly, export as MIDI.",
+  openGraph: {
+    title: "Harmonia — Chord Progression Generator",
+    description:
+      "Generate musically coherent chord progressions in any key and mode. Hear them instantly, export as MIDI.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Harmonia — Chord Progression Generator",
+    description:
+      "Generate musically coherent chord progressions in any key and mode. Hear them instantly, export as MIDI.",
+  },
 };
 
 export default function RootLayout({
@@ -20,12 +31,7 @@ export default function RootLayout({
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} bg-background text-foreground font-sans antialiased min-h-screen`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Suspense fallback={null}>
-            <Breadcrumb />
-          </Suspense>
-          {children}
-        </div>
+        {children}
       </body>
     </html>
   );
