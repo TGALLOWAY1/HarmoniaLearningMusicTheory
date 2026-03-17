@@ -4,13 +4,17 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { Play, Square, Download, Sparkles, Music, Lock, Unlock, LayoutDashboard, Replace, Undo2, RotateCcw } from "lucide-react";
+import { Play, Square, Download, Sparkles, Music, Lock, Unlock, LayoutDashboard, Replace, Undo2, RotateCcw, ChevronDown } from "lucide-react";
 import { useProgressionStore, COMPLEXITY_LABELS, type ComplexityLevel } from "@/lib/state/progressionStore";
 import { InteractivePianoRoll } from "@/components/creative/InteractivePianoRoll";
 import { SubstitutionPanel } from "@/components/creative/SubstitutionPanel";
 import { MutationControls } from "@/components/creative/MutationControls";
+import { VoicingFeedback } from "@/components/feedback/VoicingFeedback";
+import { FeedbackChart } from "@/components/feedback/FeedbackChart";
+import { getInversionLabel } from "@/lib/theory/inversionLabel";
 import type { Mode } from "@/lib/theory/harmonyEngine";
 import type { SubstitutionOption, ChordSourceType } from "@/lib/creative/types";
+import type { VoicingStyle, VoiceCount } from "@/lib/music/generators/advanced/types";
 
 /* ─── Sound Presets ─── */
 
@@ -33,6 +37,18 @@ const MODES: { value: Mode; label: string }[] = [
   { value: "phrygian", label: "Phrygian" },
 ];
 const CHORD_COUNTS = [3, 4, 5, 6, 7, 8];
+
+const VOICING_STYLES: { value: VoicingStyle; label: string }[] = [
+  { value: "closed", label: "Tight" },
+  { value: "auto", label: "Balanced" },
+  { value: "spread", label: "Open" },
+];
+
+const VOICE_COUNTS: { value: VoiceCount; label: string }[] = [
+  { value: 3, label: "Sparse" },
+  { value: 4, label: "Standard" },
+  { value: 5, label: "Rich" },
+];
 
 /** Map durationClass to a flex multiplier for column width alignment. */
 function durationToFlex(dc?: string): number {
@@ -159,6 +175,8 @@ export default function HarmoniaPage() {
     mode,
     complexity,
     numChords,
+    voicingStyle,
+    voiceCount,
     setSettings,
     generateNew,
     toggleLock,
@@ -190,6 +208,7 @@ export default function HarmoniaPage() {
   const [generationKey, setGenerationKey] = useState(0);
   const [isSynthLoading, setIsSynthLoading] = useState(false);
   const [selectedChordIndex, setSelectedChordIndex] = useState<number | null>(null);
+  const [showVoicingControls, setShowVoicingControls] = useState(false);
 
   const synthRef = useRef<Synth | null>(null);
   const playbackIndexRef = useRef(0);
@@ -485,6 +504,7 @@ export default function HarmoniaPage() {
             <p className="text-sm text-muted hidden sm:block">
               Chord Progression Generator
             </p>
+            <FeedbackChart />
             <Link
               href="/sketchpad"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border-subtle bg-surface-muted hover:bg-accent/10 hover:border-accent/30 text-xs font-medium text-muted hover:text-foreground transition-all"
@@ -614,6 +634,19 @@ export default function HarmoniaPage() {
               </select>
             </div>
 
+            {/* Voicing toggle */}
+            <button
+              onClick={() => setShowVoicingControls(!showVoicingControls)}
+              className={`flex items-center gap-1 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
+                showVoicingControls
+                  ? "border-accent/30 bg-accent/5 text-foreground"
+                  : "border-border-subtle bg-surface-muted text-muted hover:text-foreground"
+              }`}
+            >
+              Voicing
+              <ChevronDown className={`w-3 h-3 transition-transform ${showVoicingControls ? "rotate-180" : ""}`} />
+            </button>
+
             {/* Spacer */}
             <div className="flex-1" />
 
@@ -654,6 +687,59 @@ export default function HarmoniaPage() {
               Generate
             </button>
           </div>
+
+          {/* Voicing controls (collapsible) */}
+          {showVoicingControls && (
+            <div className="mt-4 pt-4 border-t border-border-subtle flex flex-wrap items-end gap-4">
+              {/* Voicing Style */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted uppercase tracking-wider">
+                  Style
+                </label>
+                <div className="flex rounded-lg border border-border-subtle overflow-hidden">
+                  {VOICING_STYLES.map((vs) => (
+                    <button
+                      key={vs.value}
+                      onClick={() => setSettings({ voicingStyle: vs.value })}
+                      className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                        voicingStyle === vs.value
+                          ? "bg-accent text-white"
+                          : "bg-surface-muted hover:bg-surface text-muted"
+                      }`}
+                    >
+                      {vs.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Voice Count / Density */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted uppercase tracking-wider">
+                  Density
+                </label>
+                <div className="flex rounded-lg border border-border-subtle overflow-hidden">
+                  {VOICE_COUNTS.map((vc) => (
+                    <button
+                      key={vc.value}
+                      onClick={() => setSettings({ voiceCount: vc.value })}
+                      className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                        voiceCount === vc.value
+                          ? "bg-accent text-white"
+                          : "bg-surface-muted hover:bg-surface text-muted"
+                      }`}
+                    >
+                      {vc.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <p className="text-[10px] text-muted/50 self-end pb-1">
+                Changes apply on next Generate
+              </p>
+            </div>
+          )}
         </section>
 
         {/* ── Chord Cards + Piano Roll + Creative Tools ── */}
@@ -765,6 +851,11 @@ export default function HarmoniaPage() {
                           <div className="text-[10px] text-muted opacity-70">
                             {chord.notes.join(" · ")}
                           </div>
+                          {chord.midiNotes && chord.root && (
+                            <div className="mt-1 text-[9px] font-mono text-accent/60">
+                              {getInversionLabel(chord.midiNotes, chord.root)}
+                            </div>
+                          )}
                           {chord.durationClass && chord.durationClass !== "full" && (
                             <div className="mt-1 text-[9px] font-mono text-muted/50 uppercase tracking-widest">
                               {chord.durationClass === "half" ? "2 beats" : chord.durationClass === "quarter" ? "1 beat" : "\u00BD beat"}
@@ -789,6 +880,20 @@ export default function HarmoniaPage() {
                       );
                     })}
                   </div>
+                </div>
+
+                {/* Voicing feedback */}
+                <div className="flex justify-end px-1">
+                  <VoicingFeedback
+                    progression={currentProgression}
+                    rootKey={rootKey}
+                    mode={mode}
+                    complexity={complexity}
+                    numChords={numChords}
+                    bpm={bpm}
+                    voicingStyle={voicingStyle}
+                    voiceCount={voiceCount}
+                  />
                 </div>
 
                 {/* Interactive Piano Roll */}

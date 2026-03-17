@@ -15,6 +15,9 @@ Generate musically coherent chord progressions in any key and mode. Refine them 
 - **Interactive piano roll** — Click notes to preview, select and shift individual notes up/down by octave
 - **Chord locking** — Lock specific chords to preserve them while regenerating the rest
 - **MIDI export** — Download your progression as a standard MIDI file
+- **Voicing controls** — Choose voicing style (Tight, Balanced, Open) and density (Sparse 3-voice, Standard 4-voice, Rich 5-voice) via a collapsible panel
+- **Inversion labels** — Each chord card shows its current inversion (Root, 1st inv, 2nd inv, 3rd inv)
+- **Voicing feedback** — Rate generated voicings with thumbs up/down; view approval trends over time in the feedback chart
 - **Adjustable BPM** — 60–180 BPM with looping playback
 
 ### Creative Iteration Tools
