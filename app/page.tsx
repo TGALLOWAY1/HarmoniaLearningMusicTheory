@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Square, Download, Sparkles, Music, Lock, Unlock } from "lucide-react";
+import Link from "next/link";
+import { Play, Square, Download, Sparkles, Music, Lock, Unlock, LayoutDashboard } from "lucide-react";
 import { useProgressionStore, COMPLEXITY_LABELS, type ComplexityLevel } from "@/lib/state/progressionStore";
 import { VerticalPianoRoll } from "@/components/progression/VerticalPianoRoll";
 import type { Mode } from "@/lib/theory/harmonyEngine";
@@ -418,9 +419,18 @@ export default function HarmoniaPage() {
             <Music className="w-5 h-5 text-accent" />
             <h1 className="text-lg font-semibold tracking-tight">Harmonia</h1>
           </div>
-          <p className="text-sm text-muted hidden sm:block">
-            Chord Progression Generator
-          </p>
+          <div className="flex items-center gap-4">
+            <p className="text-sm text-muted hidden sm:block">
+              Chord Progression Generator
+            </p>
+            <Link
+              href="/sketchpad"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border-subtle bg-surface-muted hover:bg-accent/10 hover:border-accent/30 text-xs font-medium text-muted hover:text-foreground transition-all"
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              Sketchpad
+            </Link>
+          </div>
         </div>
       </header>
 
