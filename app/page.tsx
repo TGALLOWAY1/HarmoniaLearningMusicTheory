@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Play, Square, Download, Sparkles, Music, Lock, Unlock, LayoutDashboard, Replace, Undo2, RotateCcw, ChevronDown } from "lucide-react";
 import { useProgressionStore, COMPLEXITY_LABELS, type ComplexityLevel } from "@/lib/state/progressionStore";
 import { InteractivePianoRoll } from "@/components/creative/InteractivePianoRoll";
+import { MelodyLane } from "@/components/creative/MelodyLane";
 import { SubstitutionPanel } from "@/components/creative/SubstitutionPanel";
 import { MutationControls } from "@/components/creative/MutationControls";
 import { VoicingFeedback } from "@/components/feedback/VoicingFeedback";
@@ -107,6 +108,10 @@ export default function HarmoniaPage() {
     setMelodyEnabled,
     setMelodyStyle,
     generateMelodyForProgression,
+    addMelodyNote,
+    moveMelodyNote,
+    resizeMelodyNote,
+    deleteMelodyNote,
   } = useProgressionStore();
 
   const [playbackIndex, setPlaybackIndex] = useState<number | null>(null);
@@ -907,8 +912,21 @@ export default function HarmoniaPage() {
                   onResetChord={resetChord}
                   chordSourceTypes={chordSourceTypes}
                   playheadRef={playheadRef}
-                  melodyNotes={melodyEnabled ? melody?.notes : undefined}
                 />
+
+                {/* Melody Lane */}
+                {melodyEnabled && melody && (
+                  <MelodyLane
+                    chords={currentProgression.chords}
+                    melodyNotes={melody.notes}
+                    playingIndex={playbackIndex}
+                    onAddNote={addMelodyNote}
+                    onMoveNote={moveMelodyNote}
+                    onResizeNote={resizeMelodyNote}
+                    onDeleteNote={deleteMelodyNote}
+                    onPlayNote={handlePlayNote}
+                  />
+                )}
 
                 {/* Creative Iteration Tools */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">

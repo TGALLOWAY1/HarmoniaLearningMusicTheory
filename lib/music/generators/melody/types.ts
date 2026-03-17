@@ -3,6 +3,7 @@ import type { DurationClass } from "../advanced/types";
 
 /** A single note in a generated melody. */
 export type MelodyNote = {
+  id: string;
   midi: number;
   noteWithOctave: string; // e.g. "C5"
   pitchClass: PitchClass;
@@ -14,6 +15,8 @@ export type MelodyNote = {
   chordIndex: number;
   /** Whether this note is a chord tone of the underlying chord. */
   isChordTone: boolean;
+  /** How this note was created. */
+  source: "generated" | "drawn";
 };
 
 /** The full generated melody for a progression. */
@@ -38,6 +41,8 @@ export type MelodyGenerationOptions = {
     durationClass?: DurationClass;
   }[];
   style: MelodyStyle;
+  /** Tension curve (0-1 per chord) — drives contour and note density. */
+  tensionCurve?: number[];
   /** Octave for the melody (default 5). */
   octave?: number;
   /** Seed for deterministic generation. */

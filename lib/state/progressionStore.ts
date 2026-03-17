@@ -10,7 +10,7 @@ import { getSubstitutions } from "../creative/substitutionEngine";
 import { mutateProgression } from "../creative/mutationEngine";
 import { interpretChord } from "../creative/chordInterpreter";
 import { generateMelody } from "../music/generators/melody/generateMelody";
-import type { Melody, MelodyStyle } from "../music/generators/melody/types";
+import type { Melody, MelodyNote, MelodyStyle } from "../music/generators/melody/types";
 import { getScaleDefinition } from "../theory/scale";
 import type { ScaleType } from "../theory/types";
 
@@ -79,6 +79,10 @@ interface ProgressionState {
     setMelodyStyle: (style: MelodyStyle) => void;
     generateMelodyForProgression: () => void;
     clearMelody: () => void;
+    addMelodyNote: (note: MelodyNote) => void;
+    moveMelodyNote: (noteId: string, newMidi: number, newStartBeat: number) => void;
+    resizeMelodyNote: (noteId: string, newDurationBeats: number) => void;
+    deleteMelodyNote: (noteId: string) => void;
 }
 
 type ComplexityOptions = Pick<
@@ -649,5 +653,43 @@ export const useProgressionStore = create<ProgressionState>((set, get) => ({
 
     clearMelody: () => {
         set({ melody: null, melodyEnabled: false });
+    },
+
+    addMelodyNote: (note: MelodyNote) => {
+        const { melody } = get();
+        if (!melody) {
+            set({ melody: { notes: [note], octave: 5 } });
+            return;
+        }
+        set({ melody: { ...melody, notes: [...melody.notes, note] } });
+    },
+
+    moveMelodyNote: (noteId: string, newMidi: number, newStartBeat: number) => {
+        const { melody } = get();
+        if (!melody) return;
+        const notes = melody.notes.map((n) => {
+            if (n.id !== noteId) return n;
+            const noteWithOctave = midiToNoteName(newMidi);
+            const pitchClass = midiToPitchClass(newMidi);
+            return { ...n, midi: newMidi, noteWithOctave, pitchClass, startBeat: newStartBeat };
+        });
+        set({ melody: { ...melody, notes } });
+    },
+
+    resizeMelodyNote: (noteId: string, newDurationBeats: number) => {
+        const { melody } = get();
+        if (!melody) return;
+        const clamped = Math.max(0.25, newDurationBeats);
+        const notes = melody.notes.map((n) =>
+            n.id === noteId ? { ...n, durationBeats: clamped } : n
+        );
+        set({ melody: { ...melody, notes } });
+    },
+
+    deleteMelodyNote: (noteId: string) => {
+        const { melody } = get();
+        if (!melody) return;
+        const notes = melody.notes.filter((n) => n.id !== noteId);
+        set({ melody: { ...melody, notes } });
     },
 }));
