@@ -30,6 +30,17 @@ const MODES: { value: Mode; label: string }[] = [
 ];
 const CHORD_COUNTS = [3, 4, 5, 6, 7, 8];
 
+/** Map durationClass to a flex multiplier for column width alignment. */
+function durationToFlex(dc?: string): number {
+  switch (dc) {
+    case "full": return 4;
+    case "half": return 2;
+    case "quarter": return 1;
+    case "eighth": return 0.5;
+    default: return 4;
+  }
+}
+
 /* ─── Effects Chain (shared) ─── */
 
 let masterReverb: Tone.Reverb | null = null;
@@ -161,6 +172,8 @@ export default function HarmoniaPage() {
 
   const synthRef = useRef<Synth | null>(null);
   const playbackIndexRef = useRef(0);
+  const playheadRef = useRef<HTMLDivElement>(null);
+  const animFrameRef = useRef<number | null>(null);
 
   /* ─── Synth lifecycle ─── */
 
@@ -287,6 +300,41 @@ export default function HarmoniaPage() {
     };
   }, [isPlaying, currentProgression, durationToBeats, beatsToDuration]);
 
+  /* ─── Playhead animation ─── */
+
+  useEffect(() => {
+    if (!isPlaying || !currentProgression) {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+      if (playheadRef.current) playheadRef.current.style.display = "none";
+      return;
+    }
+
+    const totalBeats = currentProgression.chords.reduce(
+      (sum, c) => sum + durationToBeats(c.durationClass), 0
+    );
+
+    const tick = () => {
+      const transport = Tone.getTransport();
+      const positionSeconds = transport.seconds;
+      const secondsPerBeat = 60 / bpm;
+      const totalSeconds = totalBeats * secondsPerBeat;
+      const progress = totalSeconds > 0 ? (positionSeconds % totalSeconds) / totalSeconds : 0;
+
+      if (playheadRef.current) {
+        playheadRef.current.style.display = "block";
+        playheadRef.current.style.left = `${progress * 100}%`;
+      }
+      animFrameRef.current = requestAnimationFrame(tick);
+    };
+
+    animFrameRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    };
+  }, [isPlaying, currentProgression, bpm, durationToBeats]);
+
   /* ─── Handlers ─── */
 
   const handleGenerate = useCallback(async () => {
@@ -377,9 +425,8 @@ export default function HarmoniaPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-6 py-10 space-y-10">
-        {/* ── Controls Bar (two rows) ── */}
-        <section className="bg-surface rounded-2xl border border-border-subtle p-6 shadow-sm space-y-4">
-          {/* Row 1: Key, Mode, Chords, BPM, Sound, Play, Generate, Export */}
+        {/* ── Controls Bar ── */}
+        <section className="bg-surface rounded-2xl border border-border-subtle p-6 shadow-sm">
           <div className="flex flex-wrap items-end gap-4">
             {/* Key */}
             <div className="flex flex-col gap-1.5">
@@ -435,6 +482,28 @@ export default function HarmoniaPage() {
               </select>
             </div>
 
+            {/* Complexity */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider">
+                Complexity
+              </label>
+              <div className="flex rounded-lg border border-border-subtle overflow-hidden">
+                {([1, 2, 3, 4] as ComplexityLevel[]).map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => setSettings({ complexity: level })}
+                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                      complexity === level
+                        ? "bg-accent text-white"
+                        : "bg-surface-muted hover:bg-surface text-muted"
+                    }`}
+                  >
+                    {COMPLEXITY_LABELS[level]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* BPM */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-muted uppercase tracking-wider">
@@ -447,7 +516,7 @@ export default function HarmoniaPage() {
                   max={180}
                   value={bpm}
                   onChange={(e) => setSettings({ bpm: Number(e.target.value) })}
-                  className="w-20 h-1.5 bg-surface-muted rounded-full appearance-none cursor-pointer accent-accent"
+                  className="w-24 accent-accent"
                 />
                 <span className="text-sm font-mono font-medium w-8 text-center">
                   {bpm}
@@ -513,39 +582,9 @@ export default function HarmoniaPage() {
               Generate
             </button>
           </div>
-
-          {/* Row 2: Complexity + Export */}
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex rounded-lg border border-border-subtle overflow-hidden">
-              {([1, 2, 3, 4] as ComplexityLevel[]).map((level) => (
-                <button
-                  key={level}
-                  onClick={() => setSettings({ complexity: level })}
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                    complexity === level
-                      ? "bg-accent text-white"
-                      : "bg-surface-muted hover:bg-surface text-muted"
-                  }`}
-                >
-                  {COMPLEXITY_LABELS[level]}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex-1" />
-
-            <button
-              onClick={exportMidi}
-              disabled={!currentProgression}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-border-subtle bg-surface hover:bg-surface-muted text-sm font-medium transition-colors disabled:opacity-40"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Export MIDI
-            </button>
-          </div>
         </section>
 
-        {/* ── Chord Cards ── */}
+        {/* ── Chord Cards + Piano Roll (unified) ── */}
         <section>
           <AnimatePresence mode="wait">
             {currentProgression && currentProgression.chords.length > 0 ? (
@@ -555,80 +594,100 @@ export default function HarmoniaPage() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="flex flex-wrap justify-center gap-4"
+                className="space-y-2"
               >
-                {currentProgression.chords.map((chord, index) => {
-                  const isActive = playbackIndex === index;
-                  const previewNotes =
-                    chord.notesWithOctave && chord.notesWithOctave.length > 0
-                      ? chord.notesWithOctave
-                      : chord.notes.map((n) => `${n}3`);
+                {/* Chord cards row — offset by piano key width, flex-matched to roll columns */}
+                <div className="flex" style={{ paddingLeft: 53 }}>
+                  <div className="flex flex-1 gap-1.5">
+                    {currentProgression.chords.map((chord, index) => {
+                      const isActive = playbackIndex === index;
+                      const previewNotes =
+                        chord.notesWithOctave && chord.notesWithOctave.length > 0
+                          ? chord.notesWithOctave
+                          : chord.notes.map((n) => `${n}3`);
+                      const colFlex = durationToFlex(chord.durationClass);
 
-                  return (
-                    <motion.div
-                      key={`${chord.romanNumeral}-${index}`}
-                      initial={{ opacity: 0, y: 16, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{
-                        delay: index * 0.06,
-                        duration: 0.35,
-                        ease: [0.22, 1, 0.36, 1],
-                      }}
-                      onClick={() => handleChordClick(previewNotes, index)}
-                      className={`relative flex flex-col items-center justify-center rounded-2xl px-8 py-8 min-w-[130px] border transition-all duration-200 cursor-pointer select-none ${
-                        isActive
-                          ? "bg-accent/10 border-accent shadow-md ring-2 ring-accent/20"
-                          : selectedChordIndex === index
-                            ? "bg-surface border-accent/50 ring-2 ring-accent/15 shadow-sm"
-                            : chord.isLocked
-                              ? "bg-surface border-accent/30 ring-1 ring-accent/10"
-                              : "bg-surface border-border-subtle hover:border-accent/40 hover:shadow-sm"
-                      }`}
-                    >
-                      {/* Playback glow pulse */}
-                      {isActive && (
+                      return (
                         <motion.div
-                          className="absolute inset-0 rounded-2xl bg-accent/5"
-                          animate={{ opacity: [0.3, 0.08, 0.3] }}
-                          transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-                        />
-                      )}
+                          key={`${chord.romanNumeral}-${index}`}
+                          initial={{ opacity: 0, y: 16, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          transition={{
+                            delay: index * 0.06,
+                            duration: 0.35,
+                            ease: [0.22, 1, 0.36, 1],
+                          }}
+                          style={{ flex: colFlex, minWidth: 0 }}
+                          onClick={() => handleChordClick(previewNotes, index)}
+                          className={`relative flex flex-col items-center justify-center rounded-xl px-3 py-5 border transition-all duration-200 cursor-pointer select-none ${
+                            isActive
+                              ? "bg-accent/10 border-accent shadow-md ring-2 ring-accent/20"
+                              : selectedChordIndex === index
+                                ? "bg-surface border-accent/50 ring-2 ring-accent/15 shadow-sm"
+                                : chord.isLocked
+                                  ? "bg-surface border-accent/30 ring-1 ring-accent/10"
+                                  : "bg-surface border-border-subtle shadow-sm hover:border-accent/60 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm"
+                          }`}
+                        >
+                          {/* Playback glow pulse */}
+                          {isActive && (
+                            <motion.div
+                              className="absolute inset-0 rounded-xl bg-accent/5"
+                              animate={{ opacity: [0.3, 0.08, 0.3] }}
+                              transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                            />
+                          )}
 
-                      {/* Lock toggle */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleLock(index);
-                        }}
-                        className={`absolute top-2 right-2 p-1 rounded-md transition-colors ${
-                          chord.isLocked
-                            ? "text-accent hover:text-accent/80"
-                            : "text-muted/30 hover:text-muted/60"
-                        }`}
-                        title={chord.isLocked ? "Unlock chord" : "Lock chord"}
-                      >
-                        {chord.isLocked ? (
-                          <Lock className="w-3.5 h-3.5" />
-                        ) : (
-                          <Unlock className="w-3.5 h-3.5" />
-                        )}
-                      </button>
+                          {/* Lock toggle */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleLock(index);
+                            }}
+                            className={`absolute top-1.5 right-1.5 p-1 rounded-md transition-colors ${
+                              chord.isLocked
+                                ? "text-accent hover:text-accent/80"
+                                : "text-muted/30 hover:text-muted/60"
+                            }`}
+                            title={chord.isLocked ? "Unlock chord" : "Lock chord"}
+                          >
+                            {chord.isLocked ? (
+                              <Lock className="w-3 h-3" />
+                            ) : (
+                              <Unlock className="w-3 h-3" />
+                            )}
+                          </button>
 
-                      <div className="text-xs font-mono text-muted mb-1 uppercase tracking-wider">
-                        {chord.romanNumeral}
-                      </div>
-                      <div className="text-2xl font-semibold mb-2">{chord.symbol}</div>
-                      <div className="text-xs text-muted opacity-70">
-                        {chord.notes.join(" · ")}
-                      </div>
-                      {chord.durationClass && chord.durationClass !== "full" && (
-                        <div className="mt-1.5 text-[10px] font-mono text-muted/50 uppercase tracking-widest">
-                          {chord.durationClass === "half" ? "2 beats" : chord.durationClass === "quarter" ? "1 beat" : "½ beat"}
-                        </div>
-                      )}
-                    </motion.div>
-                  );
-                })}
+                          <div className="text-xs font-mono text-muted mb-1 tracking-wider">
+                            {chord.romanNumeral}
+                          </div>
+                          <div className="text-xl font-semibold mb-1.5">{chord.symbol}</div>
+                          <div className="text-[10px] text-muted opacity-70">
+                            {chord.notes.join(" · ")}
+                          </div>
+                          {chord.durationClass && chord.durationClass !== "full" && (
+                            <div className="mt-1 text-[9px] font-mono text-muted/50 uppercase tracking-widest">
+                              {chord.durationClass === "half" ? "2 beats" : chord.durationClass === "quarter" ? "1 beat" : "½ beat"}
+                            </div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Piano Roll — directly below, unified */}
+                <VerticalPianoRoll
+                  chords={currentProgression.chords}
+                  playingIndex={playbackIndex}
+                  selectedIndex={selectedChordIndex}
+                  onPlayNote={handlePlayNote}
+                  onDeleteChord={deleteChord}
+                  onShiftNote={shiftNote}
+                  onSelectChord={setSelectedChordIndex}
+                  onExportMidi={exportMidi}
+                  playheadRef={playheadRef}
+                />
               </motion.div>
             ) : (
               <motion.div
@@ -648,25 +707,6 @@ export default function HarmoniaPage() {
             )}
           </AnimatePresence>
         </section>
-
-        {/* ── Piano Roll ── */}
-        {currentProgression && currentProgression.chords.length > 0 && (
-          <motion.section
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.35 }}
-          >
-            <VerticalPianoRoll
-              chords={currentProgression.chords}
-              playingIndex={playbackIndex}
-              selectedIndex={selectedChordIndex}
-              onPlayNote={handlePlayNote}
-              onDeleteChord={deleteChord}
-              onShiftNote={shiftNote}
-              onSelectChord={setSelectedChordIndex}
-            />
-          </motion.section>
-        )}
 
       </main>
 

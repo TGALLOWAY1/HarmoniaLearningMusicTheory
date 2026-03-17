@@ -301,10 +301,10 @@
    VERTICAL PIANO ROLL CSS (PROGRESSION PAGE)
 ───────────────────────────────────────────── */
 :root {
-  --vert-accent-coral: #e8856a;
-  --vert-accent-teal:  #5abfb0;
-  --vert-accent-light: rgba(232, 133, 106, 0.15);
-  --vert-key-white:    #faf9f6;
+  --vert-accent-coral: #d4714f;
+  --vert-accent-teal:  #3ea898;
+  --vert-accent-light: rgba(212, 113, 79, 0.15);
+  --vert-key-white:    #f0efe8;
   --vert-key-black:    #2a2724;
   --vert-key-active-w: #fde8e1;
   --vert-key-active-b: #5a2d22;
@@ -352,7 +352,7 @@
   font-size: 0.6rem;
   color: var(--muted);
   flex: 1;
-  min-height: 22px;
+  min-height: 18px;
   position: relative;
   background: var(--vert-key-white);
 }
@@ -390,6 +390,20 @@
   display: flex;
   flex: 1;
   overflow-x: auto;
+  position: relative;
+}
+
+/* Playhead line during playback */
+.playhead-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--vert-accent-coral);
+  opacity: 0.8;
+  z-index: 10;
+  pointer-events: none;
+  transition: left 0.05s linear;
 }
 
 .roll-column {
@@ -410,8 +424,8 @@
 }
 
 .roll-col-header {
-  padding: 8px 10px 6px;
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 4px 8px 3px;
+  border-bottom: 2px solid var(--border-subtle);
   background: var(--surface);
   position: sticky;
   top: 0;
@@ -423,9 +437,9 @@
   color: var(--muted);
 }
 .roll-col-header .col-chord-name {
-  font-size: 1rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
 .roll-column.playing .roll-col-header {
@@ -453,14 +467,14 @@
 /* Individual note cells */
 .note-cell {
   flex: 1;
-  min-height: 22px;
+  min-height: 18px;
   border-bottom: 1px solid var(--border-subtle);
   position: relative;
   transition: background 0.08s;
 }
 
 .note-cell.black-row {
-  background: rgba(0,0,0,0.025);
+  background: rgba(42, 39, 36, 0.07);
 }
 
 .note-cell.has-note::after {
@@ -475,8 +489,9 @@
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.6rem;
   color: white;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.05em;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
   transition: filter 0.1s, transform 0.1s;
 }
 
@@ -502,6 +517,43 @@
 }
 .note-cell.triggered::after {
   animation: noteFlash 0.25s ease-out;
+}
+
+/* ── Custom Range Input (BPM slider) ── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  height: 20px;
+}
+input[type="range"]::-webkit-slider-track {
+  height: 6px;
+  background: var(--border-subtle);
+  border-radius: 3px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 50%;
+  margin-top: -5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  background: var(--border-subtle);
+  border-radius: 3px;
+  border: none;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 50%;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
 .range-toggle {
