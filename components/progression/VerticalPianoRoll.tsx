@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import clsx from "clsx";
+import { Download } from "lucide-react";
 import {
     isWhiteKey,
     midiToNoteName,
@@ -19,6 +20,8 @@ export type VerticalPianoRollProps = {
     onDeleteChord?: (index: number) => void;
     onShiftNote?: (chordIndex: number, midiNote: number, direction: "up" | "down") => void;
     onSelectChord?: (index: number | null) => void;
+    onExportMidi?: () => void;
+    playheadRef?: React.Ref<HTMLDivElement>;
 };
 
 /** Compute the MIDI range needed to display all notes, with 2-note padding. */
@@ -66,6 +69,8 @@ export function VerticalPianoRoll({
     onDeleteChord,
     onShiftNote,
     onSelectChord,
+    onExportMidi,
+    playheadRef,
 }: VerticalPianoRollProps) {
     const [hoveredColumnIdx, setHoveredColumnIdx] = useState<number | null>(null);
     const [selectedNote, setSelectedNote] = useState<SelectedNote | null>(null);
@@ -202,6 +207,15 @@ export function VerticalPianoRoll({
                     <div className="range-toggle">
                         {rangeLabel}
                     </div>
+                    {onExportMidi && (
+                        <button
+                            onClick={onExportMidi}
+                            className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-border-subtle bg-surface hover:bg-surface-muted text-xs font-medium transition-colors text-muted hover:text-foreground"
+                        >
+                            <Download className="w-3 h-3" />
+                            Export MIDI
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -228,7 +242,7 @@ export function VerticalPianoRoll({
                                 )}
                                 data-note={noteName}
                             >
-                                {!isWhite ? "" : isC || isActive ? noteName : ""}
+                                {!isWhite ? "" : isC || isActive || noteRange.length <= 24 ? noteName : ""}
                             </div>
                         );
                     })}
@@ -260,15 +274,8 @@ export function VerticalPianoRoll({
                                         onSelectChord?.(isSelected ? null : colIdx);
                                         setSelectedNote(null);
                                     }}
+                                    title={`${chord.romanNumeral} — ${chord.symbol}`}
                                 >
-                                    <div className="col-numeral">
-                                        {chord.romanNumeral}
-                                        {chord.durationClass && chord.durationClass !== "full" && (
-                                            <span className="ml-1 opacity-50">
-                                                ({chord.durationClass === "half" ? "2" : chord.durationClass === "quarter" ? "1" : "½"}♩)
-                                            </span>
-                                        )}
-                                    </div>
                                     <div className="col-chord-name">{chord.symbol}</div>
                                 </div>
 
@@ -307,7 +314,6 @@ export function VerticalPianoRoll({
                     {chords.length === 0 && (
                         <div className="roll-column flex-1 opacity-50 pointer-events-none">
                             <div className="roll-col-header">
-                                <div className="col-numeral">—</div>
                                 <div className="col-chord-name">Empty</div>
                             </div>
                             {noteRange.map((midi) => (
@@ -315,6 +321,13 @@ export function VerticalPianoRoll({
                             ))}
                         </div>
                     )}
+
+                    {/* Playhead line */}
+                    <div
+                        ref={playheadRef}
+                        className="playhead-line"
+                        style={{ display: "none" }}
+                    />
                 </div>
             </div>
         </div>
