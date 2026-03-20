@@ -1,6 +1,6 @@
 # Harmonia — Chord Progression Generator & Harmonic Workstation
 
-Generate musically coherent chord progressions in any key and mode. Refine them with theory-guided substitutions, controlled mutations, and direct note-level editing. Plan the harmonic structure of entire songs with the Harmonic Sketchpad. Hear everything instantly with real piano samples and export to MIDI.
+Generate musically coherent chord progressions in any key and mode. Refine them with theory-guided substitutions and direct note-level editing. Save your favorite progressions, rate voicings with persistent feedback, and plan the harmonic structure of entire songs with the Harmonic Sketchpad. Hear everything instantly with real piano samples and export to MIDI.
 
 ![Harmonia screenshot](public/screenshot.png)
 
@@ -17,17 +17,17 @@ Generate musically coherent chord progressions in any key and mode. Refine them 
 - **MIDI export** — Download your progression as a standard MIDI file
 - **Voicing controls** — Choose voicing style (Tight, Balanced, Open) and density (Sparse 3-voice, Standard 4-voice, Rich 5-voice) via a collapsible panel
 - **Inversion labels** — Each chord card shows its current inversion (Root, 1st inv, 2nd inv, 3rd inv)
-- **Voicing feedback** — Rate generated voicings with thumbs up/down; view approval trends over time in the feedback chart
-- **Melody overlay** — Toggle melody generation to hear a monophonic melody line over chords. Three styles: Lyrical (stepwise, longer notes), Rhythmic (shorter notes, syncopation), and Arpeggiated (chord-tone focused). Melody notes are displayed on the piano roll with distinct styling and play on a separate synth voice
+- **Voicing feedback** — Rate generated voicings with thumbs up/down; ratings persist across sessions via localStorage. View approval trends over time in the feedback chart
+- **Melody overlay** — Toggle melody generation to hear a monophonic melody line over chords. Three styles: Lyrical (stepwise, longer notes), Rhythmic (shorter notes, syncopation), and Arpeggiated (chord-tone focused). Melody notes are displayed directly on the piano roll with a toggle button and distinct amber styling. Melody uses the same sound preset as chords (Piano, EP, or Organ)
+- **Favorite progressions** — Save progressions to a persistent favorites list. Load or delete saved progressions at any time
 - **Adjustable BPM** — 60–180 BPM with looping playback
 
 ### Creative Iteration Tools
 
-Three complementary forms of control for refining generated progressions:
+Two complementary forms of control for refining generated progressions:
 
 - **Manual Chord Substitution** — Click any chord card to open a substitution panel with theory-approved alternatives. Options are grouped by category (diatonic, relative, dominant-function, tritone, modal mixture, inversion) with explanations of why each works. Preview before applying, and revert any time.
-- **Mutate Parameter** — Apply controlled variation to the current progression using an intensity slider (0–100). Low values make subtle voicing or inversion changes; higher values introduce harmonic substitutions or extension changes. A structured change summary shows exactly what was mutated, with full undo support.
-- **Interactive Piano Roll Editing** — Double-click empty grid cells to add notes, double-click existing notes to remove them, and drag notes vertically to change pitch. Harmonia re-interprets the chord label in real time after edits. Source badges (Generated, Substituted, Mutated, Edited) track the provenance of each chord. Reset any chord to its original state.
+- **Interactive Piano Roll Editing** — Double-click empty grid cells to add notes, double-click existing notes to remove them, and drag notes vertically to change pitch. Harmonia re-interprets the chord label in real time after edits. Source badges (Generated, Substituted, Edited) track the provenance of each chord. Reset any chord to its original state.
 
 ### Harmonic Sketchpad
 
@@ -76,9 +76,9 @@ Open [http://localhost:3000](http://localhost:3000) to start generating progress
 6. **Lock** chords you like, then regenerate to replace only the unlocked ones
 7. **Export MIDI** to bring your progression into a DAW
 8. Click the **substitute icon** on a chord card to browse theory-guided replacement options
-9. Use the **Mutate** slider and button to introduce controlled variation to the whole progression
-10. **Double-click** the piano roll grid to add or remove individual notes — chord labels update automatically
-11. Click **Melody** to enable melody generation — choose a style (Lyrical, Rhythmic, Arpeggio) and click **Regenerate Melody** for a new line
+9. **Double-click** the piano roll grid to add or remove individual notes — chord labels update automatically
+10. Click **Melody** to enable melody generation — choose a style (Lyrical, Rhythmic, Arpeggio) and click **Regenerate Melody** for a new line. Toggle the **Melody** button on the piano roll to show/hide melody notes
+11. Click **Save** to bookmark a progression to your favorites. Click **Favorites** to view, load, or remove saved progressions
 
 ### Harmonic Sketchpad
 
