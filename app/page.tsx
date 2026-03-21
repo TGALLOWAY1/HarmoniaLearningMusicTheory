@@ -561,21 +561,17 @@ export default function HarmoniaPage() {
               <label className="text-xs font-medium text-muted uppercase tracking-wider">
                 Chord Style
               </label>
-              <div className="flex rounded-lg border border-border-subtle overflow-hidden relative">
+              <select
+                value={voicingStyle}
+                onChange={(e) => setSettings({ voicingStyle: e.target.value as VoicingStyle })}
+                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 min-w-[100px] appearance-none cursor-pointer"
+              >
                 {VOICING_STYLES.map((vs) => (
-                  <button
-                    key={vs.value}
-                    onClick={() => setSettings({ voicingStyle: vs.value })}
-                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                      voicingStyle === vs.value
-                        ? "bg-accent text-white"
-                        : "bg-surface-muted hover:bg-surface text-muted"
-                    }`}
-                  >
+                  <option key={vs.value} value={vs.value}>
                     {vs.label}
-                  </button>
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
 
             {/* Voice Count / Density */}
@@ -583,21 +579,17 @@ export default function HarmoniaPage() {
               <label className="text-xs font-medium text-muted uppercase tracking-wider">
                 Density
               </label>
-              <div className="flex rounded-lg border border-border-subtle overflow-hidden">
+              <select
+                value={voiceCount}
+                onChange={(e) => setSettings({ voiceCount: Number(e.target.value) as 3 | 4 | 5 })}
+                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 min-w-[100px] appearance-none cursor-pointer"
+              >
                 {VOICE_COUNTS.map((vc) => (
-                  <button
-                    key={vc.value}
-                    onClick={() => setSettings({ voiceCount: vc.value })}
-                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                      voiceCount === vc.value
-                        ? "bg-accent text-white"
-                        : "bg-surface-muted hover:bg-surface text-muted"
-                    }`}
-                  >
+                  <option key={vc.value} value={vc.value}>
                     {vc.label}
-                  </button>
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
 
             {/* Complexity */}
@@ -605,21 +597,17 @@ export default function HarmoniaPage() {
               <label className="text-xs font-medium text-muted uppercase tracking-wider">
                 Complexity
               </label>
-              <div className="flex rounded-lg border border-border-subtle overflow-hidden">
+              <select
+                value={complexity}
+                onChange={(e) => setSettings({ complexity: Number(e.target.value) as ComplexityLevel })}
+                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 min-w-[100px] appearance-none cursor-pointer"
+              >
                 {([1, 2, 3, 4] as ComplexityLevel[]).map((level) => (
-                  <button
-                    key={level}
-                    onClick={() => setSettings({ complexity: level })}
-                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                      complexity === level
-                        ? "bg-accent text-white"
-                        : "bg-surface-muted hover:bg-surface text-muted"
-                    }`}
-                  >
+                  <option key={level} value={level}>
                     {COMPLEXITY_LABELS[level]}
-                  </button>
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
 
             {/* Melodic Style */}
@@ -627,21 +615,17 @@ export default function HarmoniaPage() {
               <label className="text-xs font-medium text-muted uppercase tracking-wider">
                 Melodic Style
               </label>
-              <div className="flex rounded-lg border border-border-subtle overflow-hidden">
+              <select
+                value={melodyStyle}
+                onChange={(e) => setMelodyStyle(e.target.value as any)}
+                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 min-w-[100px] appearance-none cursor-pointer"
+              >
                 {MELODY_STYLES.map((ms) => (
-                  <button
-                    key={ms.value}
-                    onClick={() => setMelodyStyle(ms.value)}
-                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                      melodyStyle === ms.value
-                        ? "bg-accent text-white"
-                        : "bg-surface-muted hover:bg-surface text-muted"
-                    }`}
-                  >
+                  <option key={ms.value} value={ms.value}>
                     {ms.label}
-                  </button>
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
 
 
