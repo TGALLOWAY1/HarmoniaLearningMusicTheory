@@ -238,7 +238,7 @@ export default function HarmoniaPage() {
       const id = Tone.getTransport().schedule((time) => {
         if (!synthRef.current) return;
 
-        if (chordsEnabled) {
+        if (useProgressionStore.getState().chordsEnabled) {
           const notes =
             chord.notesWithOctave && chord.notesWithOctave.length > 0
               ? chord.notesWithOctave
@@ -257,7 +257,7 @@ export default function HarmoniaPage() {
     }
 
     // Schedule melody notes
-    if (melody && melodyEnabled && melodySynthRef.current) {
+    if (melody && melodySynthRef.current) {
       for (const mn of melody.notes) {
         const mBars = Math.floor(mn.startBeat / 4);
         const mQuarters = Math.floor(mn.startBeat % 4);
@@ -266,7 +266,9 @@ export default function HarmoniaPage() {
         const mDuration = beatsToDuration(mn.durationBeats);
 
         const mid = Tone.getTransport().schedule((time) => {
-          melodySynthRef.current?.triggerAttackRelease(mn.noteWithOctave, mDuration, time);
+          if (useProgressionStore.getState().melodyEnabled) {
+            melodySynthRef.current?.triggerAttackRelease(mn.noteWithOctave, mDuration, time);
+          }
         }, mTimeStr);
         ids.push(mid);
       }
@@ -293,7 +295,7 @@ export default function HarmoniaPage() {
       Tone.getTransport().loop = false;
       Tone.getDraw().cancel(0);
     };
-  }, [isPlaying, currentProgression, durationToBeats, beatsToDuration, melody, melodyEnabled]);
+  }, [isPlaying, currentProgression, durationToBeats, beatsToDuration, melody]);
 
   /* ─── Playhead animation ─── */
 
@@ -755,23 +757,23 @@ export default function HarmoniaPage() {
             </div>
 
             {/* Melody Group */}
-            <div className="flex items-center bg-amber-500/5 rounded-full border border-amber-500/10 p-0.5">
+            <div className="flex items-center bg-surface-muted/50 rounded-full border border-border-subtle p-0.5">
               <button
                 onClick={generateMelodyForProgression}
                 disabled={!currentProgression}
-                className="flex items-center gap-2 px-5 py-2 rounded-full hover:bg-amber-500/10 text-amber-500 font-medium transition-all active:scale-95 text-sm disabled:opacity-40"
+                className="flex items-center gap-2 px-5 py-2 rounded-full hover:bg-surface text-foreground font-medium transition-all active:scale-95 text-sm disabled:opacity-40"
               >
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-4 h-4 text-accent" />
                 Gen Melody
               </button>
-              <div className="w-px h-5 bg-amber-500/20 mx-0.5" />
+              <div className="w-px h-5 bg-border-subtle mx-0.5" />
               <button
                 onClick={() => setMelodyEnabled(!melodyEnabled)}
                 disabled={!melody}
                 className={`flex items-center justify-center w-9 h-9 rounded-full transition-colors disabled:opacity-40 ${
                   melodyEnabled
-                    ? "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20"
-                    : "bg-transparent text-amber-500/40 hover:bg-amber-500/10"
+                    ? "bg-transparent text-muted hover:bg-surface hover:text-foreground"
+                    : "bg-accent/10 text-accent/50 hover:bg-accent/20 hover:text-accent"
                 }`}
                 title={melodyEnabled ? "Mute melody" : "Unmute melody"}
               >
