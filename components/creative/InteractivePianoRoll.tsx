@@ -53,10 +53,9 @@ function computeAutoRange(chords: Chord[]): { low: number; high: number } {
     return { low: 48, high: 72 };
   }
 
-  const lowOctave = Math.floor((minMidi - 2) / 12) * 12;
-  const highOctave = Math.ceil((maxMidi + 3) / 12) * 12;
-  const finalHigh = Math.max(highOctave, lowOctave + 12);
-  return { low: lowOctave, high: finalHigh };
+  const finalLow = Math.max(21, minMidi - 3);
+  const finalHigh = Math.min(108, maxMidi + 4);
+  return { low: finalLow, high: Math.max(finalLow + 12, finalHigh) };
 }
 
 type SelectedNote = { chordIndex: number; midi: number };

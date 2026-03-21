@@ -272,7 +272,11 @@ export default function HarmoniaPage() {
     // Set loop points so the progression repeats
     Tone.getTransport().loop = true;
     Tone.getTransport().loopStart = 0;
-    Tone.getTransport().loopEnd = `${totalMeasures}m`;
+    // Use precise bar:quarter:sixteenth formatting for flawless looping
+    const endBars = Math.floor(totalBeats / 4);
+    const endQuarters = Math.floor(totalBeats % 4);
+    const endSixteenths = (totalBeats % 1) * 4;
+    Tone.getTransport().loopEnd = `${endBars}:${endQuarters}:${endSixteenths}`;
     Tone.getTransport().position = 0;
     Tone.getTransport().start();
 
@@ -456,7 +460,8 @@ export default function HarmoniaPage() {
       <main className="max-w-5xl mx-auto px-6 py-10 space-y-10">
         {/* ── Controls Bar ── */}
         <section className="bg-surface rounded-2xl border border-border-subtle p-6 shadow-sm">
-          <div className="flex flex-wrap items-end gap-4">
+          {/* Top Row */}
+          <div className="flex flex-wrap items-end gap-4 mb-4">
             {/* Key */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-muted uppercase tracking-wider">
@@ -511,6 +516,190 @@ export default function HarmoniaPage() {
               </select>
             </div>
 
+            {/* BPM */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider">
+                BPM
+              </label>
+              <input
+                type="number"
+                min={60}
+                max={180}
+                value={bpm}
+                onChange={(e) => setSettings({ bpm: Number(e.target.value) })}
+                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 w-20 appearance-none text-center"
+              />
+            </div>
+
+            {/* Sound Preset */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider">
+                Sound
+              </label>
+              <select
+                value={soundPreset}
+                onChange={(e) => setSoundPreset(e.target.value as SoundPresetId)}
+                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 appearance-none cursor-pointer"
+              >
+                {SOUND_PRESETS.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {preset.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Melody toggle */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider opacity-0 cursor-default hidden sm:block">
+                Melody
+              </label>
+              <button
+                onClick={() => setSettings({ melodyEnabled: !melodyEnabled })}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                  melodyEnabled
+                    ? "border-accent/30 bg-accent/5 text-foreground"
+                    : "border-border-subtle bg-surface-muted text-muted hover:text-foreground"
+                }`}
+              >
+                Melody
+                {melodyEnabled && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
+              </button>
+            </div>
+
+            {/* Spacer */}
+            <div className="flex-1" />
+
+            {/* Play / Stop */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider opacity-0 cursor-default hidden sm:block">
+                Action
+              </label>
+              <button
+                onClick={handleTogglePlayback}
+                disabled={!currentProgression || isSynthLoading}
+                className={`flex items-center gap-2 px-5 py-2 rounded-full font-medium text-sm transition-all disabled:opacity-40 ${
+                  isPlaying
+                    ? "bg-surface-muted border border-border-subtle text-foreground"
+                    : "bg-accent text-white shadow-sm"
+                }`}
+              >
+                {isSynthLoading ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    Loading
+                  </>
+                ) : isPlaying ? (
+                  <>
+                    <Square className="w-3.5 h-3.5" />
+                    Stop
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3.5 h-3.5" />
+                    Play
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Generate */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider opacity-0 cursor-default hidden sm:block">
+                Action
+              </label>
+              <button
+                onClick={handleGenerate}
+                className="flex items-center gap-2 px-6 py-2 rounded-full bg-accent text-white font-medium transition-all hover:opacity-90 active:scale-[0.97] shadow-sm"
+              >
+                <Sparkles className="w-4 h-4" />
+                Generate
+              </button>
+            </div>
+            
+            {/* Save to Favorites */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider opacity-0 cursor-default hidden sm:block">
+                Action
+              </label>
+              <button
+                onClick={() => {
+                  if (!currentProgression) return;
+                  const name = `${rootKey} ${mode} — ${currentProgression.chords.map(c => c.symbol).join(" · ")}`;
+                  addFavorite({ name, progression: currentProgression, rootKey, mode, complexity, bpm });
+                }}
+                disabled={!currentProgression}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-border-subtle bg-surface hover:bg-surface-muted text-xs font-medium transition-colors disabled:opacity-40 h-9"
+                title="Save to favorites"
+              >
+                <Heart className="w-3.5 h-3.5" />
+                Save
+              </button>
+            </div>
+
+            {/* Show Favorites */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider opacity-0 cursor-default hidden sm:block">
+                Action
+              </label>
+              <button
+                onClick={() => setShowFavorites(!showFavorites)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-full border border-border-subtle text-xs font-medium transition-colors h-9 ${
+                  showFavorites ? "bg-accent/10 text-accent border-accent/30" : "bg-surface hover:bg-surface-muted"
+                }`}
+              >
+                <Heart className="w-3.5 h-3.5" />
+                Favorites{favorites.length > 0 && ` (${favorites.length})`}
+              </button>
+            </div>
+          </div>
+
+          {/* Second Row: Generation Styles */}
+          <div className="pt-4 border-t border-border-subtle flex flex-wrap items-center gap-4">
+            {/* Chord Style */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider">
+                Chord Style
+              </label>
+              <div className="flex rounded-lg border border-border-subtle overflow-hidden relative">
+                {VOICING_STYLES.map((vs) => (
+                  <button
+                    key={vs.value}
+                    onClick={() => setSettings({ voicingStyle: vs.value })}
+                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                      voicingStyle === vs.value
+                        ? "bg-accent text-white"
+                        : "bg-surface-muted hover:bg-surface text-muted"
+                    }`}
+                  >
+                    {vs.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Voice Count / Density */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted uppercase tracking-wider">
+                Density
+              </label>
+              <div className="flex rounded-lg border border-border-subtle overflow-hidden">
+                {VOICE_COUNTS.map((vc) => (
+                  <button
+                    key={vc.value}
+                    onClick={() => setSettings({ voiceCount: vc.value })}
+                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                      voiceCount === vc.value
+                        ? "bg-accent text-white"
+                        : "bg-surface-muted hover:bg-surface text-muted"
+                    }`}
+                  >
+                    {vc.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Complexity */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-muted uppercase tracking-wider">
@@ -533,197 +722,11 @@ export default function HarmoniaPage() {
               </div>
             </div>
 
-            {/* BPM */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted uppercase tracking-wider">
-                BPM
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="range"
-                  min={60}
-                  max={180}
-                  value={bpm}
-                  onChange={(e) => setSettings({ bpm: Number(e.target.value) })}
-                  className="w-24 accent-accent"
-                />
-                <span className="text-sm font-mono font-medium w-8 text-center">
-                  {bpm}
-                </span>
-              </div>
-            </div>
-
-            {/* Sound Preset */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted uppercase tracking-wider">
-                Sound
-              </label>
-              <select
-                value={soundPreset}
-                onChange={(e) => setSoundPreset(e.target.value as SoundPresetId)}
-                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 appearance-none cursor-pointer"
-              >
-                {SOUND_PRESETS.map((preset) => (
-                  <option key={preset.id} value={preset.id}>
-                    {preset.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Voicing toggle */}
-            <button
-              onClick={() => setShowVoicingControls(!showVoicingControls)}
-              className={`flex items-center gap-1 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
-                showVoicingControls
-                  ? "border-accent/30 bg-accent/5 text-foreground"
-                  : "border-border-subtle bg-surface-muted text-muted hover:text-foreground"
-              }`}
-            >
-              Voicing
-              <ChevronDown className={`w-3 h-3 transition-transform ${showVoicingControls ? "rotate-180" : ""}`} />
-            </button>
-
-            {/* Melody toggle */}
-            <button
-              onClick={() => setMelodyEnabled(!melodyEnabled)}
-              className={`flex items-center gap-1 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
-                melodyEnabled
-                  ? "border-accent/30 bg-accent/5 text-foreground"
-                  : "border-border-subtle bg-surface-muted text-muted hover:text-foreground"
-              }`}
-            >
-              Melody
-              {melodyEnabled && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
-            </button>
-
-            {/* Spacer */}
-            <div className="flex-1" />
-
-            {/* Play / Stop */}
-            <button
-              onClick={handleTogglePlayback}
-              disabled={!currentProgression || isSynthLoading}
-              className={`flex items-center gap-2 px-5 py-2 rounded-full font-medium text-sm transition-all disabled:opacity-40 ${
-                isPlaying
-                  ? "bg-surface-muted border border-border-subtle text-foreground"
-                  : "bg-accent text-white shadow-sm"
-              }`}
-            >
-              {isSynthLoading ? (
-                <>
-                  <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  Loading
-                </>
-              ) : isPlaying ? (
-                <>
-                  <Square className="w-3.5 h-3.5" />
-                  Stop
-                </>
-              ) : (
-                <>
-                  <Play className="w-3.5 h-3.5" />
-                  Play
-                </>
-              )}
-            </button>
-
-            {/* Generate */}
-            <button
-              onClick={handleGenerate}
-              className="flex items-center gap-2 px-6 py-2 rounded-full bg-accent text-white font-medium transition-all hover:opacity-90 active:scale-[0.97] shadow-sm"
-            >
-              <Sparkles className="w-4 h-4" />
-              Generate
-            </button>
-
-            {/* Save to Favorites */}
-            <button
-              onClick={() => {
-                if (!currentProgression) return;
-                const name = `${rootKey} ${mode} — ${currentProgression.chords.map(c => c.symbol).join(" · ")}`;
-                addFavorite({ name, progression: currentProgression, rootKey, mode, complexity, bpm });
-              }}
-              disabled={!currentProgression}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-border-subtle bg-surface hover:bg-surface-muted text-xs font-medium transition-colors disabled:opacity-40"
-              title="Save to favorites"
-            >
-              <Heart className="w-3.5 h-3.5" />
-              Save
-            </button>
-
-            {/* Show Favorites */}
-            <button
-              onClick={() => setShowFavorites(!showFavorites)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-full border border-border-subtle text-xs font-medium transition-colors ${
-                showFavorites ? "bg-accent/10 text-accent border-accent/30" : "bg-surface hover:bg-surface-muted"
-              }`}
-            >
-              <Heart className="w-3.5 h-3.5" />
-              Favorites{favorites.length > 0 && ` (${favorites.length})`}
-            </button>
-          </div>
-
-          {/* Voicing controls (collapsible) */}
-          {showVoicingControls && (
-            <div className="mt-4 pt-4 border-t border-border-subtle flex flex-wrap items-end gap-4">
-              {/* Voicing Style */}
+            {/* Melodic Style */}
+            {melodyEnabled && (
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted uppercase tracking-wider">
-                  Style
-                </label>
-                <div className="flex rounded-lg border border-border-subtle overflow-hidden">
-                  {VOICING_STYLES.map((vs) => (
-                    <button
-                      key={vs.value}
-                      onClick={() => setSettings({ voicingStyle: vs.value })}
-                      className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                        voicingStyle === vs.value
-                          ? "bg-accent text-white"
-                          : "bg-surface-muted hover:bg-surface text-muted"
-                      }`}
-                    >
-                      {vs.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Voice Count / Density */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted uppercase tracking-wider">
-                  Density
-                </label>
-                <div className="flex rounded-lg border border-border-subtle overflow-hidden">
-                  {VOICE_COUNTS.map((vc) => (
-                    <button
-                      key={vc.value}
-                      onClick={() => setSettings({ voiceCount: vc.value })}
-                      className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                        voiceCount === vc.value
-                          ? "bg-accent text-white"
-                          : "bg-surface-muted hover:bg-surface text-muted"
-                      }`}
-                    >
-                      {vc.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <p className="text-[10px] text-muted/50 self-end pb-1">
-                Changes apply on next Generate
-              </p>
-            </div>
-          )}
-
-          {/* Melody controls (collapsible) */}
-          {melodyEnabled && (
-            <div className="mt-4 pt-4 border-t border-border-subtle flex flex-wrap items-end gap-4">
-              {/* Melody Style */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted uppercase tracking-wider">
-                  Melody Style
+                  Melodic Style
                 </label>
                 <div className="flex rounded-lg border border-border-subtle overflow-hidden">
                   {MELODY_STYLES.map((ms) => (
@@ -741,18 +744,26 @@ export default function HarmoniaPage() {
                   ))}
                 </div>
               </div>
+            )}
 
-              {/* Regenerate melody */}
-              <button
-                onClick={generateMelodyForProgression}
-                disabled={!currentProgression}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-subtle bg-surface-muted hover:bg-accent/10 hover:border-accent/30 text-xs font-medium text-muted hover:text-foreground transition-all disabled:opacity-40"
-              >
-                <Sparkles className="w-3 h-3" />
-                Regenerate Melody
-              </button>
-            </div>
-          )}
+            {/* Regenerate melody */}
+            {melodyEnabled && (
+              <div className="flex flex-col gap-1.5 mt-auto">
+                <button
+                  onClick={generateMelodyForProgression}
+                  disabled={!currentProgression}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-subtle bg-surface-muted hover:bg-accent/10 hover:border-accent/30 text-xs font-medium text-muted hover:text-foreground transition-all disabled:opacity-40"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  Regenerate Melody
+                </button>
+              </div>
+            )}
+
+            <p className="text-[10px] text-muted/50 ml-auto mt-auto mb-1">
+              Changes apply on next Generate
+            </p>
+          </div>
         </section>
 
         {/* ── Favorites Panel ── */}
