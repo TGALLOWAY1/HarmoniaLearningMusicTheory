@@ -614,7 +614,7 @@ export const useProgressionStore = create<ProgressionState>((set, get) => ({
             octave: 5,
         });
 
-        set({ melody });
+        set({ melody, melodyEnabled: true });
     },
 
     clearMelody: () => {

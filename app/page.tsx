@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Square, Download, Sparkles, Music, Lock, Unlock, LayoutDashboard, Shuffle, RotateCcw, ChevronDown, Heart, Trash2, Upload, VolumeX } from "lucide-react";
+import { Play, Square, Download, Sparkles, Music, Lock, Unlock, LayoutDashboard, Shuffle, RotateCcw, ChevronDown, Heart, Trash2, Upload, VolumeX, Volume2 } from "lucide-react";
 import Link from "next/link";
 import { useProgressionStore, COMPLEXITY_LABELS, type ComplexityLevel } from "@/lib/state/progressionStore";
 import { InteractivePianoRoll } from "@/components/creative/InteractivePianoRoll";
@@ -750,13 +750,18 @@ export default function HarmoniaPage() {
               <Sparkles className="w-3.5 h-3.5" />
               Gen Melody
             </button>
-            {/* Silence Melody */}
+            {/* Mute/Unmute Melody */}
             <button
-              onClick={() => { /* TODO: implement mute melody state in store */ }}
-              className="flex items-center justify-center w-9 h-9 rounded-full border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 text-amber-500/60 hover:text-amber-500 transition-all"
-              title="Mute melody"
+              onClick={() => setMelodyEnabled(!melodyEnabled)}
+              disabled={!melody}
+              className={`flex items-center justify-center w-9 h-9 rounded-full border transition-all ${
+                melodyEnabled
+                  ? "border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500"
+                  : "border-amber-500/10 bg-surface hover:bg-amber-500/5 text-amber-500/40"
+              } disabled:opacity-40`}
+              title={melodyEnabled ? "Mute melody" : "Unmute melody"}
             >
-              <VolumeX className="w-3.5 h-3.5" />
+              {melodyEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
             </button>
           </div>
         </section>
