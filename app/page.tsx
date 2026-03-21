@@ -555,7 +555,7 @@ export default function HarmoniaPage() {
                 Melody
               </label>
               <button
-                onClick={() => setSettings({ melodyEnabled: !melodyEnabled })}
+                onClick={() => setMelodyEnabled(!melodyEnabled)}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
                   melodyEnabled
                     ? "border-accent/30 bg-accent/5 text-foreground"
