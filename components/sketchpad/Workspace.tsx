@@ -118,10 +118,12 @@ export function SketchpadWorkspace({ project }: { project: HarmonicSketchProject
 
       scheduleIdsRef.current = ids;
 
-      const totalMeasures = totalBeats / 4;
+      const endBars = Math.floor(totalBeats / 4);
+      const endQuarters = Math.floor(totalBeats % 4);
+      const endSixteenths = (totalBeats % 1) * 4;
       Tone.getTransport().loop = loop;
       Tone.getTransport().loopStart = 0;
-      Tone.getTransport().loopEnd = `${totalMeasures}m`;
+      Tone.getTransport().loopEnd = `${endBars}:${endQuarters}:${endSixteenths}`;
       Tone.getTransport().position = 0;
       Tone.getTransport().start();
     },
@@ -199,12 +201,14 @@ export function SketchpadWorkspace({ project }: { project: HarmonicSketchProject
       }
 
       // Schedule stop at end
-      const totalMeasures = beatOffset / 4;
+      const endBars = Math.floor(beatOffset / 4);
+      const endQuarters = Math.floor(beatOffset % 4);
+      const endSixteenths = (beatOffset % 1) * 4;
       const endId = Tone.getTransport().schedule(() => {
         Tone.getDraw().schedule(() => {
           stopPlayback();
         }, Tone.now());
-      }, `${totalMeasures}m`);
+      }, `${endBars}:${endQuarters}:${endSixteenths}`);
       ids.push(endId);
 
       scheduleIdsRef.current = ids;
