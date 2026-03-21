@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Square, Download, Sparkles, Music, Lock, Unlock, LayoutDashboard, Shuffle, RotateCcw, ChevronDown, Heart, Trash2, Upload, VolumeX, Volume2 } from "lucide-react";
+import { Play, Square, Download, Sparkles, Music, Lock, Unlock, LayoutDashboard, Shuffle, RotateCcw, ChevronDown, Heart, Trash2, Upload, VolumeX, Volume2, Settings2, Layers, Activity } from "lucide-react";
 import Link from "next/link";
 import { useProgressionStore, COMPLEXITY_LABELS, type ComplexityLevel } from "@/lib/state/progressionStore";
 import { InteractivePianoRoll } from "@/components/creative/InteractivePianoRoll";
@@ -459,180 +459,141 @@ export default function HarmoniaPage() {
 
       <main className="max-w-5xl mx-auto px-6 py-10 space-y-10">
         {/* ── Controls Bar ── */}
-        <section className="bg-surface rounded-2xl border border-border-subtle p-6 shadow-sm">
-          {/* Top Row */}
-          <div className="flex flex-wrap items-end gap-4 mb-4">
-            {/* Key */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted uppercase tracking-wider">
-                Key
-              </label>
-              <select
-                value={rootKey}
-                onChange={(e) => setSettings({ rootKey: e.target.value })}
-                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 w-20 appearance-none cursor-pointer"
-              >
-                {NOTES.map((note) => (
-                  <option key={note} value={note}>
-                    {note}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Mode */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted uppercase tracking-wider">
-                Mode
-              </label>
-              <select
-                value={mode}
-                onChange={(e) => setSettings({ mode: e.target.value as Mode })}
-                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 w-32 appearance-none cursor-pointer"
-              >
-                {MODES.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Chord Count */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted uppercase tracking-wider">
-                Chords
-              </label>
-              <select
-                value={numChords}
-                onChange={(e) => setSettings({ numChords: Number(e.target.value) as 3 | 4 | 5 | 6 | 7 | 8 })}
-                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 w-20 appearance-none cursor-pointer"
-              >
-                {CHORD_COUNTS.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* BPM */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted uppercase tracking-wider">
-                BPM
-              </label>
-              <input
-                type="number"
-                min={60}
-                max={180}
-                value={bpm}
-                onChange={(e) => setSettings({ bpm: Number(e.target.value) })}
-                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 w-20 appearance-none text-center"
-              />
-            </div>
-
-            {/* Sound Preset */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted uppercase tracking-wider">
-                Sound
-              </label>
-              <select
-                value={soundPreset}
-                onChange={(e) => setSoundPreset(e.target.value as SoundPresetId)}
-                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 appearance-none cursor-pointer"
-              >
-                {SOUND_PRESETS.map((preset) => (
-                  <option key={preset.id} value={preset.id}>
-                    {preset.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Spacer */}
-            <div className="flex-1" />
+        <section className="bg-surface/40 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-3xl p-5 shadow-xl relative overflow-visible z-20">
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-wrap lg:flex-nowrap items-start justify-between gap-6">
             
-          </div>
-
-          {/* Second Row: Generation Styles */}
-          <div className="pt-4 border-t border-border-subtle flex flex-wrap items-center gap-4 w-full">
-            {/* Chord Style */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted uppercase tracking-wider">
-                Chord Style
+            {/* Foundation Group */}
+            <div className="flex flex-col gap-1.5 flex-1 min-w-[240px]">
+              <label className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-widest pl-1">
+                <Music className="w-3 h-3 text-accent/70" />
+                Foundation
               </label>
-              <select
-                value={voicingStyle}
-                onChange={(e) => setSettings({ voicingStyle: e.target.value as VoicingStyle })}
-                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 min-w-[100px] appearance-none cursor-pointer"
-              >
-                {VOICING_STYLES.map((vs) => (
-                  <option key={vs.value} value={vs.value}>
-                    {vs.label}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center bg-background/50 border border-border-subtle rounded-xl shadow-inner p-1">
+                <select
+                  value={rootKey}
+                  onChange={(e) => setSettings({ rootKey: e.target.value })}
+                  className="flex-1 bg-transparent hover:bg-surface px-2 py-1.5 text-sm font-medium outline-none appearance-none rounded-lg cursor-pointer transition-colors text-center"
+                  title="Root Key"
+                >
+                  {NOTES.map((note) => (
+                    <option key={note} value={note}>{note}</option>
+                  ))}
+                </select>
+                <div className="w-px h-4 bg-border-subtle mx-1" />
+                <select
+                  value={mode}
+                  onChange={(e) => setSettings({ mode: e.target.value as Mode })}
+                  className="flex-1 bg-transparent hover:bg-surface px-2 py-1.5 text-sm font-medium outline-none appearance-none rounded-lg cursor-pointer transition-colors text-center"
+                  title="Scale Mode"
+                >
+                  {MODES.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                <div className="w-px h-4 bg-border-subtle mx-1" />
+                <div className="relative flex-1 group" title="BPM (Tempo)">
+                  <input
+                    type="number"
+                    min={60}
+                    max={180}
+                    value={bpm}
+                    onChange={(e) => setSettings({ bpm: Number(e.target.value) })}
+                    className="w-full bg-transparent hover:bg-surface px-2 py-1.5 text-sm font-medium outline-none text-center rounded-lg transition-colors"
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted opacity-50 pointer-events-none group-hover:opacity-100 transition-opacity">BPM</span>
+                </div>
+              </div>
             </div>
 
-            {/* Voice Count / Density */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted uppercase tracking-wider">
-                Density
+            {/* Generation Group */}
+            <div className="flex flex-col gap-1.5 flex-1 min-w-[260px]">
+              <label className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-widest pl-1">
+                <Settings2 className="w-3 h-3 text-purple-500/70" />
+                Generation
               </label>
-              <select
-                value={voiceCount}
-                onChange={(e) => setSettings({ voiceCount: Number(e.target.value) as 3 | 4 | 5 })}
-                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 min-w-[100px] appearance-none cursor-pointer"
-              >
-                {VOICE_COUNTS.map((vc) => (
-                  <option key={vc.value} value={vc.value}>
-                    {vc.label}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center bg-background/50 border border-border-subtle rounded-xl shadow-inner p-1">
+                <select
+                  value={numChords}
+                  onChange={(e) => setSettings({ numChords: Number(e.target.value) as 3 | 4 | 5 | 6 | 7 | 8 })}
+                  className="flex-1 bg-transparent hover:bg-surface px-2 py-1.5 text-sm font-medium outline-none appearance-none rounded-lg cursor-pointer transition-colors text-center"
+                  title="Number of Chords"
+                >
+                  {CHORD_COUNTS.map((n) => (
+                    <option key={n} value={n}>{n} Chords</option>
+                  ))}
+                </select>
+                <div className="w-px h-4 bg-border-subtle mx-1" />
+                <select
+                  value={complexity}
+                  onChange={(e) => setSettings({ complexity: Number(e.target.value) as ComplexityLevel })}
+                  className="flex-1 bg-transparent hover:bg-surface px-2 py-1.5 text-sm font-medium outline-none appearance-none rounded-lg cursor-pointer transition-colors text-center"
+                  title="Harmonic Complexity"
+                >
+                  {([1, 2, 3, 4] as ComplexityLevel[]).map((level) => (
+                    <option key={level} value={level}>{COMPLEXITY_LABELS[level]}</option>
+                  ))}
+                </select>
+                <div className="w-px h-4 bg-border-subtle mx-1" />
+                <select
+                  value={voicingStyle}
+                  onChange={(e) => setSettings({ voicingStyle: e.target.value as VoicingStyle })}
+                  className="flex-1 bg-transparent hover:bg-surface px-2 py-1.5 text-sm font-medium outline-none appearance-none rounded-lg cursor-pointer transition-colors text-center"
+                  title="Voicing Style"
+                >
+                  {VOICING_STYLES.map((vs) => (
+                    <option key={vs.value} value={vs.value}>{vs.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {/* Complexity */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted uppercase tracking-wider">
-                Complexity
+            {/* Textures Group */}
+            <div className="flex flex-col gap-1.5 flex-1 min-w-[280px]">
+              <label className="flex items-center justify-between w-full pl-1">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-widest">
+                  <Layers className="w-3 h-3 text-emerald-500/70" />
+                  Textures
+                </div>
+                <span className="text-[9px] text-muted/40 uppercase tracking-widest font-medium">Changes apply on Gen</span>
               </label>
-              <select
-                value={complexity}
-                onChange={(e) => setSettings({ complexity: Number(e.target.value) as ComplexityLevel })}
-                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 min-w-[100px] appearance-none cursor-pointer"
-              >
-                {([1, 2, 3, 4] as ComplexityLevel[]).map((level) => (
-                  <option key={level} value={level}>
-                    {COMPLEXITY_LABELS[level]}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center bg-background/50 border border-border-subtle rounded-xl shadow-inner p-1">
+                <select
+                  value={voiceCount}
+                  onChange={(e) => setSettings({ voiceCount: Number(e.target.value) as 3 | 4 | 5 })}
+                  className="flex-1 bg-transparent hover:bg-surface px-2 py-1.5 text-sm font-medium outline-none appearance-none rounded-lg cursor-pointer transition-colors text-center"
+                  title="Voice Count (Density)"
+                >
+                  {VOICE_COUNTS.map((vc) => (
+                    <option key={vc.value} value={vc.value}>{vc.label}</option>
+                  ))}
+                </select>
+                <div className="w-px h-4 bg-border-subtle mx-1" />
+                <select
+                  value={melodyStyle}
+                  onChange={(e) => setMelodyStyle(e.target.value as any)}
+                  className="flex-1 bg-transparent hover:bg-surface px-2 py-1.5 text-sm font-medium outline-none appearance-none rounded-lg cursor-pointer transition-colors text-center"
+                  title="Melodic Rhythm Style"
+                >
+                  {MELODY_STYLES.map((ms) => (
+                    <option key={ms.value} value={ms.value}>{ms.label}</option>
+                  ))}
+                </select>
+                <div className="w-px h-4 bg-border-subtle mx-1" />
+                <select
+                  value={soundPreset}
+                  onChange={(e) => setSoundPreset(e.target.value as SoundPresetId)}
+                  className="flex-1 bg-transparent hover:bg-surface px-2 py-1.5 text-sm font-medium outline-none appearance-none rounded-lg cursor-pointer transition-colors text-center"
+                  title="Synth Preset"
+                >
+                  {SOUND_PRESETS.map((preset) => (
+                    <option key={preset.id} value={preset.id}>{preset.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {/* Melodic Style */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-muted uppercase tracking-wider">
-                Melodic Style
-              </label>
-              <select
-                value={melodyStyle}
-                onChange={(e) => setMelodyStyle(e.target.value as any)}
-                className="bg-surface-muted border border-border-subtle rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/30 min-w-[100px] appearance-none cursor-pointer"
-              >
-                {MELODY_STYLES.map((ms) => (
-                  <option key={ms.value} value={ms.value}>
-                    {ms.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-
-
-            <p className="text-[10px] text-muted/50 ml-auto mt-auto mb-1">
-              Changes apply on next Generate
-            </p>
           </div>
         </section>
 
