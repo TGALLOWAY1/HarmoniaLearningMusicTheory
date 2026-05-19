@@ -591,7 +591,7 @@ export default function HarmoniaPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 lg:px-6 py-10 space-y-10">
+      <main className="max-w-5xl mx-auto px-4 lg:px-6 pt-10 pb-28 lg:pb-10 space-y-10">
         {/* ── Controls Bar ── */}
         <section className="bg-surface/40 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-3xl p-5 shadow-xl relative overflow-visible z-20">
           <div className="absolute top-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
@@ -800,8 +800,8 @@ export default function HarmoniaPage() {
         )}
 
         {/* ── Action Controls Bar ── */}
-        <section className="flex justify-center mb-6">
-          <div className="flex flex-wrap items-center gap-3 bg-surface/50 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-full p-2 shadow-xl relative z-10 before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-b before:from-white/5 before:to-transparent before:pointer-events-none">
+        <section className="fixed inset-x-0 bottom-0 z-40 flex justify-center lg:static lg:z-auto lg:mb-6">
+          <div className="relative z-10 flex flex-wrap items-center justify-center gap-3 shadow-xl backdrop-blur-xl bg-surface w-full border-t border-border-subtle px-3 pt-2 pb-[calc(0.5rem_+_env(safe-area-inset-bottom))] lg:w-auto lg:rounded-full lg:border lg:border-white/10 lg:dark:border-white/5 lg:bg-surface/50 lg:p-2 before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/5 before:to-transparent before:pointer-events-none lg:before:rounded-full">
             
             {/* Play / Stop */}
             <button
