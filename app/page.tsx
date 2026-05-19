@@ -853,7 +853,7 @@ export default function HarmoniaPage() {
                             isActive
                               ? "bg-accent/10 border-accent shadow-md ring-2 ring-accent/20"
                               : selectedChordIndex === index
-                                ? "bg-surface border-accent/50 ring-2 ring-accent/15 shadow-sm"
+                                ? "bg-accent/5 border-accent ring-2 ring-accent/40 shadow-sm"
                                 : chord.isLocked
                                   ? "bg-surface border-accent/30 ring-1 ring-accent/10"
                                   : "bg-surface border-border-subtle shadow-sm hover:border-accent/60 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm"
