@@ -839,12 +839,12 @@ export default function HarmoniaPage() {
             <div className="w-px h-8 bg-border-subtle/50 mx-1" />
 
             {/* Chords Group */}
-            <div className="flex items-center bg-surface-muted/50 rounded-full border border-border-subtle p-0.5">
+            <div className="flex flex-1 lg:flex-initial items-center bg-surface-muted/50 rounded-full border border-border-subtle p-0.5">
               <button
                 onClick={handleGenerate}
-                className="flex items-center gap-2 px-5 py-2 rounded-full hover:bg-surface text-foreground font-medium transition-all active:scale-95 text-sm"
+                className="flex flex-1 lg:flex-initial items-center justify-center gap-2 px-5 py-2.5 lg:py-2 rounded-full bg-accent text-white lg:bg-transparent lg:text-foreground lg:hover:bg-surface font-semibold lg:font-medium transition-all active:scale-95 text-sm"
               >
-                <Sparkles className="w-4 h-4 text-accent" />
+                <Sparkles className="w-4 h-4 text-white lg:text-accent" />
                 Gen Chords
               </button>
               <div className="w-px h-5 bg-border-subtle mx-0.5" />
