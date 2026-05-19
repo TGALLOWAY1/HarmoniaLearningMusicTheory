@@ -1047,6 +1047,11 @@ export default function HarmoniaPage() {
                 {/* Voicing feedback removed and added to controls bar */}
 
                 {/* Interactive Piano Roll */}
+                <p className="lg:hidden flex items-center gap-1.5 px-1 mb-1.5 text-[11px] text-muted/70">
+                  <Music className="w-3 h-3 shrink-0 text-accent/60" />
+                  Piano roll — tap a note to hear it, drag to edit · scroll for more
+                </p>
+                <div className="relative">
                 <InteractivePianoRoll
                   chords={currentProgression.chords}
                   playingIndex={playbackIndex}
@@ -1069,6 +1074,8 @@ export default function HarmoniaPage() {
                     if (note) useProgressionStore.getState().moveMelodyNote(noteId, toMidi, note.startBeat);
                   } : undefined}
                 />
+                <div className="lg:hidden pointer-events-none absolute right-0 top-0 bottom-0 w-5 bg-gradient-to-l from-black/10 to-transparent" />
+                </div>
 
                 {/* Substitution Panel */}
                 {substitutionTarget !== null && currentProgression.chords[substitutionTarget] && (
