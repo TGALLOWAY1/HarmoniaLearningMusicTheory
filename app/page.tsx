@@ -1079,7 +1079,12 @@ export default function HarmoniaPage() {
 
                 {/* Substitution Panel */}
                 {substitutionTarget !== null && currentProgression.chords[substitutionTarget] && (
-                  <div className="mt-4 max-w-md">
+                  <>
+                    <div
+                      className="lg:hidden fixed inset-0 z-50 bg-black/40"
+                      onClick={closeSubstitution}
+                    />
+                    <div className="fixed inset-x-0 bottom-0 z-50 max-h-[90vh] overflow-y-auto lg:static lg:z-auto lg:max-h-none lg:overflow-visible lg:mt-4 lg:max-w-md">
                     <SubstitutionPanel
                       chord={currentProgression.chords[substitutionTarget]}
                       chordIndex={substitutionTarget}
@@ -1090,7 +1095,8 @@ export default function HarmoniaPage() {
                       onClose={closeSubstitution}
                       canRevert={originalChords.has(substitutionTarget)}
                     />
-                  </div>
+                    </div>
+                  </>
                 )}
               </motion.div>
             ) : (

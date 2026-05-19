@@ -57,7 +57,7 @@ export function SubstitutionPanel({
   }, [substitutions, activeCategory]);
 
   return (
-    <div className="bg-surface rounded-2xl border border-border-subtle shadow-lg overflow-hidden">
+    <div className="bg-surface rounded-t-2xl lg:rounded-2xl border border-border-subtle shadow-lg overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-border-subtle flex items-center justify-between">
         <div>
