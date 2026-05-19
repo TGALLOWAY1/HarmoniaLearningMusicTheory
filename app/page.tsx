@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Square, Download, Sparkles, Music, Lock, Unlock, LayoutDashboard, Shuffle, RotateCcw, ChevronDown, Heart, Trash2, Upload, VolumeX, Volume2, Settings2, Layers, Activity, Save } from "lucide-react";
+import { Play, Square, Download, Sparkles, Music, Lock, Unlock, LayoutDashboard, Shuffle, RotateCcw, ChevronDown, Heart, Trash2, Upload, VolumeX, Volume2, Settings2, Layers, Activity, Save, MoreVertical } from "lucide-react";
 import Link from "next/link";
 import { useProgressionStore, COMPLEXITY_LABELS, type ComplexityLevel } from "@/lib/state/progressionStore";
 import { InteractivePianoRoll } from "@/components/creative/InteractivePianoRoll";
@@ -121,6 +121,8 @@ export default function HarmoniaPage() {
   const [selectedChordIndex, setSelectedChordIndex] = useState<number | null>(null);
   const [showVoicingControls, setShowVoicingControls] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [showMelodyOnRoll, setShowMelodyOnRoll] = useState(true);
 
   const synthRef = useRef<Synth | null>(null);
@@ -443,12 +445,12 @@ export default function HarmoniaPage() {
     <div className="min-h-screen bg-background">
       {/* ── Header ── */}
       <header className="border-b border-border-subtle bg-surface/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 lg:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Music className="w-5 h-5 text-accent" />
             <h1 className="text-lg font-semibold tracking-tight">Harmonia</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-4">
 
             <FeedbackChart />
             
@@ -506,19 +508,115 @@ export default function HarmoniaPage() {
               Sketchpad
             </Link>
           </div>
+
+          {/* Mobile header actions — overflow menu */}
+          <div className="relative flex lg:hidden">
+            <button
+              onClick={() => setHeaderMenuOpen((v) => !v)}
+              className="flex items-center justify-center w-10 h-10 rounded-full border border-border-subtle bg-surface text-muted hover:text-foreground transition-colors"
+              aria-label="More actions"
+              aria-expanded={headerMenuOpen}
+            >
+              <MoreVertical className="w-5 h-5" />
+            </button>
+            {headerMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setHeaderMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-border-subtle bg-surface shadow-xl p-2 flex flex-col gap-1">
+                  <div className="px-1 py-0.5">
+                    <FeedbackChart />
+                  </div>
+                  {currentProgression && (
+                    <button
+                      onClick={() => {
+                        const name = `${rootKey} ${mode} — ${currentProgression.chords.map((c) => c.symbol).join(" · ")}`;
+                        addFavorite({ name, progression: currentProgression, rootKey, mode, complexity, bpm });
+                        setHeaderMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-foreground hover:bg-surface-muted transition-colors"
+                    >
+                      <Save className="w-4 h-4" />
+                      Save to favorites
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowFavorites(!showFavorites);
+                      setHeaderMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-foreground hover:bg-surface-muted transition-colors"
+                  >
+                    <Heart className="w-4 h-4" />
+                    Favorites{favorites.length > 0 && ` (${favorites.length})`}
+                  </button>
+                  {currentProgression && (
+                    <button
+                      onClick={() => {
+                        exportMidi();
+                        setHeaderMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-foreground hover:bg-surface-muted transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Export Chords MIDI
+                    </button>
+                  )}
+                  {melodyEnabled && melody && (
+                    <button
+                      onClick={() => {
+                        exportMelodyMidi();
+                        setHeaderMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-foreground hover:bg-surface-muted transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Export Melody MIDI
+                    </button>
+                  )}
+                  <Link
+                    href="/sketchpad"
+                    onClick={() => setHeaderMenuOpen(false)}
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-foreground hover:bg-surface-muted transition-colors"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    Sketchpad
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-10 space-y-10">
+      <main className="max-w-5xl mx-auto px-4 lg:px-6 pt-10 pb-28 lg:pb-10 space-y-10">
         {/* ── Controls Bar ── */}
         <section className="bg-surface/40 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-3xl p-5 shadow-xl relative overflow-visible z-20">
           <div className="absolute top-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-          
-          <div className="relative z-10 flex flex-wrap lg:flex-nowrap items-start justify-between gap-6">
+
+          {/* Mobile: collapsed settings summary */}
+          <button
+            onClick={() => setSettingsExpanded((v) => !v)}
+            className={`flex lg:hidden items-center justify-between w-full gap-3 relative z-10 ${settingsExpanded ? "mb-4" : ""}`}
+            aria-expanded={settingsExpanded}
+          >
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-muted uppercase tracking-widest shrink-0">
+              <Settings2 className="w-3 h-3 text-accent/70" />
+              Settings
+            </span>
+            <span className="flex-1 text-right text-xs font-medium text-foreground truncate">
+              {rootKey} {MODES.find((m) => m.value === mode)?.label} · {bpm} BPM · {numChords} Chords · {COMPLEXITY_LABELS[complexity]}
+            </span>
+            <ChevronDown className={`w-4 h-4 text-muted transition-transform shrink-0 ${settingsExpanded ? "rotate-180" : ""}`} />
+          </button>
+
+          <div className={`relative z-10 ${settingsExpanded ? "flex" : "hidden"} lg:flex flex-wrap lg:flex-nowrap items-start justify-between gap-6`}>
             
             {/* Foundation Group */}
             <div className="flex flex-col gap-1.5 flex-1 min-w-[240px]">
-              <label className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-widest pl-1">
+              <label className="flex items-center gap-1.5 text-[11px] lg:text-[10px] font-bold text-muted uppercase tracking-widest pl-1">
                 <Music className="w-3 h-3 text-accent/70" />
                 Foundation
               </label>
@@ -561,7 +659,7 @@ export default function HarmoniaPage() {
 
             {/* Generation Group */}
             <div className="flex flex-col gap-1.5 flex-1 min-w-[260px]">
-              <label className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-widest pl-1">
+              <label className="flex items-center gap-1.5 text-[11px] lg:text-[10px] font-bold text-muted uppercase tracking-widest pl-1">
                 <Settings2 className="w-3 h-3 text-purple-500/70" />
                 Generation
               </label>
@@ -604,7 +702,7 @@ export default function HarmoniaPage() {
             {/* Textures Group */}
             <div className="flex flex-col gap-1.5 flex-1 min-w-[280px]">
               <label className="flex items-center justify-between w-full pl-1">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-widest">
+                <div className="flex items-center gap-1.5 text-[11px] lg:text-[10px] font-bold text-muted uppercase tracking-widest">
                   <Layers className="w-3 h-3 text-emerald-500/70" />
                   Textures
                 </div>
@@ -702,8 +800,8 @@ export default function HarmoniaPage() {
         )}
 
         {/* ── Action Controls Bar ── */}
-        <section className="flex justify-center mb-6">
-          <div className="flex flex-wrap items-center gap-3 bg-surface/50 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-full p-2 shadow-xl relative z-10 before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-b before:from-white/5 before:to-transparent before:pointer-events-none">
+        <section className="fixed inset-x-0 bottom-0 z-40 flex justify-center lg:static lg:z-auto lg:mb-6">
+          <div className="relative z-10 flex flex-wrap items-center justify-center gap-3 shadow-xl backdrop-blur-xl bg-surface w-full border-t border-border-subtle px-3 pt-2 pb-[calc(0.5rem_+_env(safe-area-inset-bottom))] lg:w-auto lg:rounded-full lg:border lg:border-white/10 lg:dark:border-white/5 lg:bg-surface/50 lg:p-2 before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/5 before:to-transparent before:pointer-events-none lg:before:rounded-full">
             
             {/* Play / Stop */}
             <button
@@ -741,12 +839,12 @@ export default function HarmoniaPage() {
             <div className="w-px h-8 bg-border-subtle/50 mx-1" />
 
             {/* Chords Group */}
-            <div className="flex items-center bg-surface-muted/50 rounded-full border border-border-subtle p-0.5">
+            <div className="flex flex-1 lg:flex-initial items-center bg-surface-muted/50 rounded-full border border-border-subtle p-0.5">
               <button
                 onClick={handleGenerate}
-                className="flex items-center gap-2 px-5 py-2 rounded-full hover:bg-surface text-foreground font-medium transition-all active:scale-95 text-sm"
+                className="flex flex-1 lg:flex-initial items-center justify-center gap-2 px-5 py-2.5 lg:py-2 rounded-full bg-accent text-white lg:bg-transparent lg:text-foreground lg:hover:bg-surface font-semibold lg:font-medium transition-all active:scale-95 text-sm"
               >
-                <Sparkles className="w-4 h-4 text-accent" />
+                <Sparkles className="w-4 h-4 text-white lg:text-accent" />
                 Gen Chords
               </button>
               <div className="w-px h-5 bg-border-subtle mx-0.5" />
@@ -853,7 +951,7 @@ export default function HarmoniaPage() {
                             isActive
                               ? "bg-accent/10 border-accent shadow-md ring-2 ring-accent/20"
                               : selectedChordIndex === index
-                                ? "bg-surface border-accent/50 ring-2 ring-accent/15 shadow-sm"
+                                ? "bg-accent/5 border-accent ring-2 ring-accent/40 shadow-sm"
                                 : chord.isLocked
                                   ? "bg-surface border-accent/30 ring-1 ring-accent/10"
                                   : "bg-surface border-border-subtle shadow-sm hover:border-accent/60 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm"
@@ -883,7 +981,7 @@ export default function HarmoniaPage() {
                                 openSubstitution(index);
                                 setSelectedChordIndex(index);
                               }}
-                              className="p-1 rounded-md text-muted/30 hover:text-accent/70 transition-colors"
+                              className="p-1.5 lg:p-1 rounded-md text-muted/30 hover:text-accent/70 transition-colors"
                               title="Substitute chord"
                             >
                               <Shuffle className="w-3 h-3" />
@@ -893,7 +991,7 @@ export default function HarmoniaPage() {
                                 e.stopPropagation();
                                 toggleLock(index);
                               }}
-                              className={`p-1 rounded-md transition-colors ${
+                              className={`p-1.5 lg:p-1 rounded-md transition-colors ${
                                 chord.isLocked
                                   ? "text-accent hover:text-accent/80"
                                   : "text-muted/30 hover:text-muted/60"
@@ -949,6 +1047,11 @@ export default function HarmoniaPage() {
                 {/* Voicing feedback removed and added to controls bar */}
 
                 {/* Interactive Piano Roll */}
+                <p className="lg:hidden flex items-center gap-1.5 px-1 mb-1.5 text-[11px] text-muted/70">
+                  <Music className="w-3 h-3 shrink-0 text-accent/60" />
+                  Piano roll — tap a note to hear it, drag to edit · scroll for more
+                </p>
+                <div className="relative">
                 <InteractivePianoRoll
                   chords={currentProgression.chords}
                   playingIndex={playbackIndex}
@@ -971,10 +1074,17 @@ export default function HarmoniaPage() {
                     if (note) useProgressionStore.getState().moveMelodyNote(noteId, toMidi, note.startBeat);
                   } : undefined}
                 />
+                <div className="lg:hidden pointer-events-none absolute right-0 top-0 bottom-0 w-5 bg-gradient-to-l from-black/10 to-transparent" />
+                </div>
 
                 {/* Substitution Panel */}
                 {substitutionTarget !== null && currentProgression.chords[substitutionTarget] && (
-                  <div className="mt-4 max-w-md">
+                  <>
+                    <div
+                      className="lg:hidden fixed inset-0 z-50 bg-black/40"
+                      onClick={closeSubstitution}
+                    />
+                    <div className="fixed inset-x-0 bottom-0 z-50 max-h-[90vh] overflow-y-auto lg:static lg:z-auto lg:max-h-none lg:overflow-visible lg:mt-4 lg:max-w-md">
                     <SubstitutionPanel
                       chord={currentProgression.chords[substitutionTarget]}
                       chordIndex={substitutionTarget}
@@ -985,7 +1095,8 @@ export default function HarmoniaPage() {
                       onClose={closeSubstitution}
                       canRevert={originalChords.has(substitutionTarget)}
                     />
-                  </div>
+                    </div>
+                  </>
                 )}
               </motion.div>
             ) : (
