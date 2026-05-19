@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Square, Download, Sparkles, Music, Lock, Unlock, LayoutDashboard, Shuffle, RotateCcw, ChevronDown, Heart, Trash2, Upload, VolumeX, Volume2, Settings2, Layers, Activity, Save } from "lucide-react";
+import { Play, Square, Download, Sparkles, Music, Lock, Unlock, LayoutDashboard, Shuffle, RotateCcw, ChevronDown, Heart, Trash2, Upload, VolumeX, Volume2, Settings2, Layers, Activity, Save, MoreVertical } from "lucide-react";
 import Link from "next/link";
 import { useProgressionStore, COMPLEXITY_LABELS, type ComplexityLevel } from "@/lib/state/progressionStore";
 import { InteractivePianoRoll } from "@/components/creative/InteractivePianoRoll";
@@ -121,6 +121,7 @@ export default function HarmoniaPage() {
   const [selectedChordIndex, setSelectedChordIndex] = useState<number | null>(null);
   const [showVoicingControls, setShowVoicingControls] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [showMelodyOnRoll, setShowMelodyOnRoll] = useState(true);
 
   const synthRef = useRef<Synth | null>(null);
@@ -448,7 +449,7 @@ export default function HarmoniaPage() {
             <Music className="w-5 h-5 text-accent" />
             <h1 className="text-lg font-semibold tracking-tight">Harmonia</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-4">
 
             <FeedbackChart />
             
@@ -505,6 +506,86 @@ export default function HarmoniaPage() {
               <LayoutDashboard className="w-3.5 h-3.5" />
               Sketchpad
             </Link>
+          </div>
+
+          {/* Mobile header actions — overflow menu */}
+          <div className="relative flex lg:hidden">
+            <button
+              onClick={() => setHeaderMenuOpen((v) => !v)}
+              className="flex items-center justify-center w-10 h-10 rounded-full border border-border-subtle bg-surface text-muted hover:text-foreground transition-colors"
+              aria-label="More actions"
+              aria-expanded={headerMenuOpen}
+            >
+              <MoreVertical className="w-5 h-5" />
+            </button>
+            {headerMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setHeaderMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-border-subtle bg-surface shadow-xl p-2 flex flex-col gap-1">
+                  <div className="px-1 py-0.5">
+                    <FeedbackChart />
+                  </div>
+                  {currentProgression && (
+                    <button
+                      onClick={() => {
+                        const name = `${rootKey} ${mode} — ${currentProgression.chords.map((c) => c.symbol).join(" · ")}`;
+                        addFavorite({ name, progression: currentProgression, rootKey, mode, complexity, bpm });
+                        setHeaderMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-foreground hover:bg-surface-muted transition-colors"
+                    >
+                      <Save className="w-4 h-4" />
+                      Save to favorites
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowFavorites(!showFavorites);
+                      setHeaderMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-foreground hover:bg-surface-muted transition-colors"
+                  >
+                    <Heart className="w-4 h-4" />
+                    Favorites{favorites.length > 0 && ` (${favorites.length})`}
+                  </button>
+                  {currentProgression && (
+                    <button
+                      onClick={() => {
+                        exportMidi();
+                        setHeaderMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-foreground hover:bg-surface-muted transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Export Chords MIDI
+                    </button>
+                  )}
+                  {melodyEnabled && melody && (
+                    <button
+                      onClick={() => {
+                        exportMelodyMidi();
+                        setHeaderMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-foreground hover:bg-surface-muted transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Export Melody MIDI
+                    </button>
+                  )}
+                  <Link
+                    href="/sketchpad"
+                    onClick={() => setHeaderMenuOpen(false)}
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-foreground hover:bg-surface-muted transition-colors"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    Sketchpad
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>
