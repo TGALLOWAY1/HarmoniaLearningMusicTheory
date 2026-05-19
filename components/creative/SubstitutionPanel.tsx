@@ -123,7 +123,7 @@ export function SubstitutionPanel({
                       {CATEGORY_LABELS[option.category]}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => onPreview(option)}
                       className="p-1.5 rounded-lg hover:bg-accent/10 text-muted hover:text-accent transition-colors"
