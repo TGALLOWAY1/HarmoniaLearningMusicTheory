@@ -122,6 +122,7 @@ export default function HarmoniaPage() {
   const [showVoicingControls, setShowVoicingControls] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [showMelodyOnRoll, setShowMelodyOnRoll] = useState(true);
 
   const synthRef = useRef<Synth | null>(null);
@@ -594,8 +595,24 @@ export default function HarmoniaPage() {
         {/* ── Controls Bar ── */}
         <section className="bg-surface/40 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-3xl p-5 shadow-xl relative overflow-visible z-20">
           <div className="absolute top-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-          
-          <div className="relative z-10 flex flex-wrap lg:flex-nowrap items-start justify-between gap-6">
+
+          {/* Mobile: collapsed settings summary */}
+          <button
+            onClick={() => setSettingsExpanded((v) => !v)}
+            className={`flex lg:hidden items-center justify-between w-full gap-3 relative z-10 ${settingsExpanded ? "mb-4" : ""}`}
+            aria-expanded={settingsExpanded}
+          >
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-muted uppercase tracking-widest shrink-0">
+              <Settings2 className="w-3 h-3 text-accent/70" />
+              Settings
+            </span>
+            <span className="flex-1 text-right text-xs font-medium text-foreground truncate">
+              {rootKey} {MODES.find((m) => m.value === mode)?.label} · {bpm} BPM · {numChords} Chords · {COMPLEXITY_LABELS[complexity]}
+            </span>
+            <ChevronDown className={`w-4 h-4 text-muted transition-transform shrink-0 ${settingsExpanded ? "rotate-180" : ""}`} />
+          </button>
+
+          <div className={`relative z-10 ${settingsExpanded ? "flex" : "hidden"} lg:flex flex-wrap lg:flex-nowrap items-start justify-between gap-6`}>
             
             {/* Foundation Group */}
             <div className="flex flex-col gap-1.5 flex-1 min-w-[240px]">
