@@ -443,7 +443,7 @@ export default function HarmoniaPage() {
     <div className="min-h-screen bg-background">
       {/* ── Header ── */}
       <header className="border-b border-border-subtle bg-surface/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 lg:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Music className="w-5 h-5 text-accent" />
             <h1 className="text-lg font-semibold tracking-tight">Harmonia</h1>
@@ -509,7 +509,7 @@ export default function HarmoniaPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-10 space-y-10">
+      <main className="max-w-5xl mx-auto px-4 lg:px-6 py-10 space-y-10">
         {/* ── Controls Bar ── */}
         <section className="bg-surface/40 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-3xl p-5 shadow-xl relative overflow-visible z-20">
           <div className="absolute top-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
@@ -518,7 +518,7 @@ export default function HarmoniaPage() {
             
             {/* Foundation Group */}
             <div className="flex flex-col gap-1.5 flex-1 min-w-[240px]">
-              <label className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-widest pl-1">
+              <label className="flex items-center gap-1.5 text-[11px] lg:text-[10px] font-bold text-muted uppercase tracking-widest pl-1">
                 <Music className="w-3 h-3 text-accent/70" />
                 Foundation
               </label>
@@ -561,7 +561,7 @@ export default function HarmoniaPage() {
 
             {/* Generation Group */}
             <div className="flex flex-col gap-1.5 flex-1 min-w-[260px]">
-              <label className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-widest pl-1">
+              <label className="flex items-center gap-1.5 text-[11px] lg:text-[10px] font-bold text-muted uppercase tracking-widest pl-1">
                 <Settings2 className="w-3 h-3 text-purple-500/70" />
                 Generation
               </label>
@@ -604,7 +604,7 @@ export default function HarmoniaPage() {
             {/* Textures Group */}
             <div className="flex flex-col gap-1.5 flex-1 min-w-[280px]">
               <label className="flex items-center justify-between w-full pl-1">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted uppercase tracking-widest">
+                <div className="flex items-center gap-1.5 text-[11px] lg:text-[10px] font-bold text-muted uppercase tracking-widest">
                   <Layers className="w-3 h-3 text-emerald-500/70" />
                   Textures
                 </div>
@@ -883,7 +883,7 @@ export default function HarmoniaPage() {
                                 openSubstitution(index);
                                 setSelectedChordIndex(index);
                               }}
-                              className="p-1 rounded-md text-muted/30 hover:text-accent/70 transition-colors"
+                              className="p-1.5 lg:p-1 rounded-md text-muted/30 hover:text-accent/70 transition-colors"
                               title="Substitute chord"
                             >
                               <Shuffle className="w-3 h-3" />
@@ -893,7 +893,7 @@ export default function HarmoniaPage() {
                                 e.stopPropagation();
                                 toggleLock(index);
                               }}
-                              className={`p-1 rounded-md transition-colors ${
+                              className={`p-1.5 lg:p-1 rounded-md transition-colors ${
                                 chord.isLocked
                                   ? "text-accent hover:text-accent/80"
                                   : "text-muted/30 hover:text-muted/60"
