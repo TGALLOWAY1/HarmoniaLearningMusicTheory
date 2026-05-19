@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { X, Play, Check, ArrowLeft } from "lucide-react";
+import { X, Play, Check, ArrowLeft, ChevronDown } from "lucide-react";
 import type { SubstitutionOption, SubstitutionCategory } from "@/lib/creative/types";
 import type { Chord } from "@/lib/theory/progressionTypes";
 
@@ -45,6 +45,7 @@ export function SubstitutionPanel({
   canRevert,
 }: SubstitutionPanelProps) {
   const [activeCategory, setActiveCategory] = useState<SubstitutionCategory | "all">("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const categories = useMemo(() => {
     const cats = new Set(substitutions.map(s => s.category));
@@ -110,20 +111,28 @@ export function SubstitutionPanel({
           </div>
         ) : (
           <div className="divide-y divide-border-subtle">
-            {filtered.map(option => (
+            {filtered.map(option => {
+              const isExpanded = expandedId === option.id;
+              return (
               <div
                 key={option.id}
-                className="px-5 py-3 hover:bg-surface-muted/50 transition-colors group"
+                className="hover:bg-surface-muted/50 transition-colors group"
               >
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-semibold">{option.candidateSymbol}</span>
-                    <span className="text-xs font-mono text-muted">{option.candidateRomanNumeral}</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${CATEGORY_COLORS[option.category]}`}>
+                <div className="flex items-center justify-between gap-2 px-5 py-2.5">
+                  <button
+                    onClick={() => setExpandedId(isExpanded ? null : option.id)}
+                    className="flex items-center gap-2 min-w-0 flex-1 text-left"
+                    aria-expanded={isExpanded}
+                    title={isExpanded ? "Hide details" : "Show details"}
+                  >
+                    <span className="text-base font-semibold shrink-0">{option.candidateSymbol}</span>
+                    <span className="text-xs font-mono text-muted shrink-0">{option.candidateRomanNumeral}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border shrink-0 ${CATEGORY_COLORS[option.category]}`}>
                       {CATEGORY_LABELS[option.category]}
                     </span>
-                  </div>
-                  <div className="flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                    <ChevronDown className={`w-3.5 h-3.5 text-muted/50 shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                  </button>
+                  <div className="flex items-center gap-1 shrink-0 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => onPreview(option)}
                       className="p-1.5 rounded-lg hover:bg-accent/10 text-muted hover:text-accent transition-colors"
@@ -140,13 +149,16 @@ export function SubstitutionPanel({
                     </button>
                   </div>
                 </div>
-                <div className="text-xs text-muted">
-                  <span className="opacity-70">{option.candidateNotes.join(" · ")}</span>
-                  <span className="mx-1.5 opacity-30">—</span>
-                  <span>{option.reason}</span>
-                </div>
+                {isExpanded && (
+                  <div className="px-5 pb-3 text-xs text-muted">
+                    <span className="opacity-70">{option.candidateNotes.join(" · ")}</span>
+                    <span className="mx-1.5 opacity-30">—</span>
+                    <span>{option.reason}</span>
+                  </div>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
