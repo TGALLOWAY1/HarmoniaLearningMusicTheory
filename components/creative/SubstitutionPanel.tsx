@@ -118,7 +118,7 @@ export function SubstitutionPanel({
                 key={option.id}
                 className="hover:bg-surface-muted/50 transition-colors group"
               >
-                <div className="flex items-center justify-between gap-2 px-5 py-2.5">
+                <div className="flex items-center justify-between gap-2 px-5 py-2.5 lg:py-3">
                   <button
                     onClick={() => setExpandedId(isExpanded ? null : option.id)}
                     className="flex items-center gap-2 min-w-0 flex-1 text-left"
@@ -130,7 +130,7 @@ export function SubstitutionPanel({
                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border shrink-0 ${CATEGORY_COLORS[option.category]}`}>
                       {CATEGORY_LABELS[option.category]}
                     </span>
-                    <ChevronDown className={`w-3.5 h-3.5 text-muted/50 shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`lg:hidden w-3.5 h-3.5 text-muted/50 shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                   </button>
                   <div className="flex items-center gap-1 shrink-0 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                     <button
@@ -149,13 +149,11 @@ export function SubstitutionPanel({
                     </button>
                   </div>
                 </div>
-                {isExpanded && (
-                  <div className="px-5 pb-3 text-xs text-muted">
-                    <span className="opacity-70">{option.candidateNotes.join(" · ")}</span>
-                    <span className="mx-1.5 opacity-30">—</span>
-                    <span>{option.reason}</span>
-                  </div>
-                )}
+                <div className={`${isExpanded ? "block" : "hidden"} lg:block px-5 pb-3 text-xs text-muted`}>
+                  <span className="opacity-70">{option.candidateNotes.join(" · ")}</span>
+                  <span className="mx-1.5 opacity-30">—</span>
+                  <span>{option.reason}</span>
+                </div>
               </div>
               );
             })}
