@@ -16,8 +16,8 @@ Generate musically coherent chord progressions in any key and mode. Refine them 
 - **Chord locking** — Lock specific chords to preserve them while regenerating the rest
 - **MIDI export** — Download your progression as a standard MIDI file
 - **Voicing controls** — Choose voicing style (Tight, Balanced, Open) and density (Sparse 3-voice, Standard 4-voice, Rich 5-voice) via a collapsible panel
-- **Inversion labels** — Each chord card shows its current inversion (Root, 1st inv, 2nd inv, 3rd inv)
-- **Voicing feedback** — Rate generated voicings with thumbs up/down; ratings persist across sessions via localStorage. View approval trends over time in the feedback chart
+- **Streamlined action bar** — A single horizontal row of actions (Play · Chords · Melody · Save · Audio) keeps every primary control visible at once. Compact, clutter-free chord cards on mobile give the piano roll more room, while desktop retains its roomier spacing
+- **Voicing feedback** — Rate generated voicings with thumbs up/down in a lightweight card below the action bar; ratings persist across sessions via localStorage. View approval trends over time in the feedback chart
 - **Melody overlay** — Toggle melody generation to hear a monophonic melody line over chords. Three styles: Lyrical (stepwise, longer notes), Rhythmic (shorter notes, syncopation), and Arpeggiated (chord-tone focused). Melody notes are displayed directly on the piano roll with a toggle button and distinct amber styling. Melody uses the same sound preset as chords (Piano, EP, or Organ)
 - **Favorite progressions** — Save progressions to a persistent favorites list. Load or delete saved progressions at any time
 - **Adjustable BPM** — 60–180 BPM with looping playback
@@ -70,14 +70,14 @@ Open [http://localhost:3000](http://localhost:3000) to start generating progress
 
 1. Pick a **key** and **mode** from the control panel
 2. Set **complexity** (Simple → Altered) and number of chords
-3. Click **Generate** to create a progression
+3. Click **Chords** to create a progression
 4. Click any chord card to preview it, or hit **Play** to loop the full progression
 5. Use the piano roll to inspect voicings — click a note then **Cmd/Ctrl + Arrow Up/Down** to shift it by octave
 6. **Lock** chords you like, then regenerate to replace only the unlocked ones
 7. **Export MIDI** to bring your progression into a DAW
 8. Click the **substitute icon** on a chord card to browse theory-guided replacement options
 9. **Double-click** the piano roll grid to add or remove individual notes — chord labels update automatically
-10. Click **Melody** to enable melody generation — choose a style (Lyrical, Rhythmic, Arpeggio) and click **Regenerate Melody** for a new line. Toggle the **Melody** button on the piano roll to show/hide melody notes
+10. Click **Melody** to generate a melody line — choose a style (Lyrical, Rhythmic, Arpeggio) and click **Melody** again for a new line. Use the **Audio** button in the action bar to mute or unmute chords and melody
 11. Click **Save** to bookmark a progression to your favorites. Click **Favorites** to view, load, or remove saved progressions
 
 ### Harmonic Sketchpad
