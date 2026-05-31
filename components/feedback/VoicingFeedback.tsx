@@ -14,6 +14,8 @@ interface VoicingFeedbackProps {
   bpm: number;
   voicingStyle: string;
   voiceCount: number;
+  /** "inline" renders a compact thumbs widget; "card" renders a low-emphasis card. */
+  variant?: "inline" | "card";
 }
 
 export function VoicingFeedback({
@@ -25,6 +27,7 @@ export function VoicingFeedback({
   bpm,
   voicingStyle,
   voiceCount,
+  variant = "inline",
 }: VoicingFeedbackProps) {
   const addFeedback = useFeedbackStore((s) => s.addFeedback);
   const entries = useFeedbackStore((s) => s.entries);
@@ -93,9 +96,8 @@ export function VoicingFeedback({
     [progression, rootKey, mode, complexity, numChords, bpm, voicingStyle, voiceCount, addFeedback]
   );
 
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs text-muted mr-1">Rate voicing</span>
+  const thumbs = (
+    <>
       <button
         onClick={() => handleRate("up")}
         disabled={submitted !== null}
@@ -124,6 +126,31 @@ export function VoicingFeedback({
       >
         <ThumbsDown className="w-4 h-4" />
       </button>
+    </>
+  );
+
+  // Low-emphasis card variant — sits below the action bar
+  if (variant === "card") {
+    return (
+      <div className="flex items-center justify-between gap-4 rounded-2xl border border-border-subtle bg-surface/50 px-4 py-3">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-foreground">Rate your voicing</div>
+          <div className="text-xs text-muted">How does this progression sound?</div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {thumbs}
+          {submitted && (
+            <span className="text-[10px] text-muted/60 ml-1">Logged</span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-muted mr-1">Rate voicing</span>
+      {thumbs}
       {submitted && (
         <span className="text-[10px] text-muted/60 ml-1">Logged</span>
       )}

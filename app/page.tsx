@@ -3,14 +3,13 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Square, Download, Sparkles, Music, Lock, Unlock, LayoutDashboard, Shuffle, RotateCcw, ChevronDown, Heart, Trash2, Upload, VolumeX, Volume2, Settings2, Layers, Activity, Save, MoreVertical } from "lucide-react";
+import { Play, Square, Download, Sparkles, Music, Lock, Unlock, LayoutDashboard, Shuffle, RotateCcw, ChevronDown, Heart, Trash2, Upload, VolumeX, Volume2, Settings2, Layers, Save, MoreVertical } from "lucide-react";
 import Link from "next/link";
 import { useProgressionStore, COMPLEXITY_LABELS, type ComplexityLevel } from "@/lib/state/progressionStore";
 import { InteractivePianoRoll } from "@/components/creative/InteractivePianoRoll";
 import { SubstitutionPanel } from "@/components/creative/SubstitutionPanel";
 import { VoicingFeedback } from "@/components/feedback/VoicingFeedback";
 import { FeedbackChart } from "@/components/feedback/FeedbackChart";
-import { getInversionLabel } from "@/lib/theory/inversionLabel";
 import { useFavoritesStore } from "@/lib/favorites/favoritesStore";
 import {
   SOUND_PRESETS,
@@ -122,6 +121,7 @@ export default function HarmoniaPage() {
   const [showVoicingControls, setShowVoicingControls] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [audioMenuOpen, setAudioMenuOpen] = useState(false);
   const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [showMelodyOnRoll, setShowMelodyOnRoll] = useState(true);
 
@@ -353,6 +353,12 @@ export default function HarmoniaPage() {
     }
     setIsPlaying(!isPlaying);
   }, [isPlaying, setIsPlaying]);
+
+  const handleSaveProgression = useCallback(() => {
+    if (!currentProgression) return;
+    const name = `${rootKey} ${mode} — ${currentProgression.chords.map((c) => c.symbol).join(" · ")}`;
+    addFavorite({ name, progression: currentProgression, rootKey, mode, complexity, bpm });
+  }, [currentProgression, rootKey, mode, complexity, bpm, addFavorite]);
 
   const handlePlayNote = useCallback(
     (noteWithOctave: string) => {
@@ -591,7 +597,7 @@ export default function HarmoniaPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 lg:px-6 pt-10 pb-28 lg:pb-10 space-y-10">
+      <main className="max-w-5xl mx-auto px-4 lg:px-6 pt-5 lg:pt-10 pb-10 space-y-6 lg:space-y-10">
         {/* ── Controls Bar ── */}
         <section className="bg-surface/40 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-3xl p-5 shadow-xl relative overflow-visible z-20">
           <div className="absolute top-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
@@ -799,112 +805,6 @@ export default function HarmoniaPage() {
           </section>
         )}
 
-        {/* ── Action Controls Bar ── */}
-        <section className="fixed inset-x-0 bottom-0 z-40 flex justify-center lg:static lg:z-auto lg:mb-6">
-          <div className="relative z-10 flex flex-wrap items-center justify-center gap-3 shadow-xl backdrop-blur-xl bg-surface w-full border-t border-border-subtle px-3 pt-2 pb-[calc(0.5rem_+_env(safe-area-inset-bottom))] lg:w-auto lg:rounded-full lg:border lg:border-white/10 lg:dark:border-white/5 lg:bg-surface/50 lg:p-2 before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/5 before:to-transparent before:pointer-events-none lg:before:rounded-full">
-            
-            {/* Play / Stop */}
-            <button
-              onClick={handleTogglePlayback}
-              disabled={!currentProgression || isSynthLoading}
-              className={`relative flex items-center justify-center gap-2 w-28 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 disabled:opacity-40 overflow-hidden group ${
-                isPlaying
-                  ? "bg-surface text-foreground shadow-inner border border-border-subtle"
-                  : "bg-accent text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
-              }`}
-            >
-              {!isPlaying && (
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-              )}
-              <div className="relative flex items-center gap-2">
-                {isSynthLoading ? (
-                  <>
-                    <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    Loading
-                  </>
-                ) : isPlaying ? (
-                  <>
-                    <Square className="w-4 h-4" />
-                    Stop
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4 ml-0.5 fill-current" />
-                    Play
-                  </>
-                )}
-              </div>
-            </button>
-
-            <div className="w-px h-8 bg-border-subtle/50 mx-1" />
-
-            {/* Chords Group */}
-            <div className="flex flex-1 lg:flex-initial items-center bg-surface-muted/50 rounded-full border border-border-subtle p-0.5">
-              <button
-                onClick={handleGenerate}
-                className="flex flex-1 lg:flex-initial items-center justify-center gap-2 px-5 py-2.5 lg:py-2 rounded-full bg-accent text-white lg:bg-transparent lg:text-foreground lg:hover:bg-surface font-semibold lg:font-medium transition-all active:scale-95 text-sm"
-              >
-                <Sparkles className="w-4 h-4 text-white lg:text-accent" />
-                Gen Chords
-              </button>
-              <div className="w-px h-5 bg-border-subtle mx-0.5" />
-              <button
-                onClick={() => setChordsEnabled(!chordsEnabled)}
-                className={`flex items-center justify-center w-9 h-9 rounded-full transition-colors ${
-                  chordsEnabled
-                    ? "bg-transparent text-muted hover:bg-surface hover:text-foreground"
-                    : "bg-accent/10 text-accent/50 hover:bg-accent/20 hover:text-accent"
-                }`}
-                title={chordsEnabled ? "Mute chords" : "Unmute chords"}
-              >
-                {chordsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-              </button>
-            </div>
-
-            {/* Melody Group */}
-            <div className="flex items-center bg-surface-muted/50 rounded-full border border-border-subtle p-0.5">
-              <button
-                onClick={generateMelodyForProgression}
-                disabled={!currentProgression}
-                className="flex items-center gap-2 px-5 py-2 rounded-full hover:bg-surface text-foreground font-medium transition-all active:scale-95 text-sm disabled:opacity-40"
-              >
-                <Sparkles className="w-4 h-4 text-accent" />
-                Gen Melody
-              </button>
-              <div className="w-px h-5 bg-border-subtle mx-0.5" />
-              <button
-                onClick={() => setMelodyEnabled(!melodyEnabled)}
-                disabled={!melody}
-                className={`flex items-center justify-center w-9 h-9 rounded-full transition-colors disabled:opacity-40 ${
-                  melodyEnabled
-                    ? "bg-transparent text-muted hover:bg-surface hover:text-foreground"
-                    : "bg-accent/10 text-accent/50 hover:bg-accent/20 hover:text-accent"
-                }`}
-                title={melodyEnabled ? "Mute melody" : "Unmute melody"}
-              >
-                {melodyEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-              </button>
-            </div>
-
-            <div className="w-px h-8 bg-border-subtle/50 mx-1" />
-
-            {/* Rate Voicing Inline */}
-            {currentProgression && (
-              <VoicingFeedback
-                progression={currentProgression}
-                rootKey={rootKey}
-                mode={mode}
-                complexity={complexity}
-                numChords={numChords}
-                bpm={bpm}
-                voicingStyle={voicingStyle}
-                voiceCount={voiceCount}
-              />
-            )}
-
-          </div>
-        </section>
-
         {/* ── Chord Cards + Piano Roll + Creative Tools ── */}
         <section>
           <AnimatePresence mode="wait">
@@ -947,7 +847,7 @@ export default function HarmoniaPage() {
                           }}
                           style={{ flex: colFlex, minWidth: 0 }}
                           onClick={() => handleChordClick(previewNotes, index)}
-                          className={`relative flex flex-col items-center justify-center rounded-xl px-3 py-5 border transition-all duration-200 cursor-pointer select-none ${
+                          className={`relative flex flex-col items-center justify-center rounded-xl px-2.5 py-3 lg:px-3 lg:py-5 border transition-all duration-200 cursor-pointer select-none ${
                             isActive
                               ? "bg-accent/10 border-accent shadow-md ring-2 ring-accent/20"
                               : selectedChordIndex === index
@@ -1006,18 +906,13 @@ export default function HarmoniaPage() {
                             </button>
                           </div>
 
-                          <div className="text-xs font-mono text-muted mb-1 tracking-wider">
+                          <div className="text-xs font-mono text-muted mb-0.5 lg:mb-1 tracking-wider">
                             {chord.romanNumeral}
                           </div>
-                          <div className="text-xl font-semibold mb-1.5">{chord.symbol}</div>
+                          <div className="text-lg lg:text-xl font-semibold mb-1 lg:mb-1.5">{chord.symbol}</div>
                           <div className="text-[10px] text-muted opacity-70">
                             {chord.notes.join(" · ")}
                           </div>
-                          {chord.midiNotes && chord.root && (
-                            <div className="mt-1 text-[9px] font-mono text-accent/60">
-                              {getInversionLabel(chord.midiNotes, chord.root)}
-                            </div>
-                          )}
                           {chord.durationClass && chord.durationClass !== "full" && (
                             <div className="mt-1 text-[9px] font-mono text-muted/50 uppercase tracking-widest">
                               {chord.durationClass === "half" ? "2 beats" : chord.durationClass === "quarter" ? "1 beat" : "\u00BD beat"}
@@ -1116,6 +1011,139 @@ export default function HarmoniaPage() {
               </motion.div>
             )}
           </AnimatePresence>
+        </section>
+
+        {/* ── Action Bar + Voicing Rating ── */}
+        <section className="space-y-3">
+          {/* Single horizontal action row — Play · Chords · Melody · Save · Audio */}
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2 lg:gap-3">
+
+            {/* Primary: Play / Stop */}
+            <button
+              onClick={handleTogglePlayback}
+              disabled={!currentProgression || isSynthLoading}
+              className={`flex items-center justify-center gap-1.5 px-4 lg:px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-200 disabled:opacity-40 shrink-0 ${
+                isPlaying
+                  ? "bg-surface text-foreground border border-border-subtle shadow-inner"
+                  : "bg-accent text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+              }`}
+            >
+              {isSynthLoading ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Loading
+                </>
+              ) : isPlaying ? (
+                <>
+                  <Square className="w-4 h-4" />
+                  Stop
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 fill-current" />
+                  Play
+                </>
+              )}
+            </button>
+
+            {/* Secondary: Generate Chords */}
+            <button
+              onClick={handleGenerate}
+              className="flex items-center justify-center gap-1.5 px-3 lg:px-4 py-2.5 rounded-full border border-border-subtle bg-surface text-foreground font-medium text-sm hover:bg-surface-muted hover:border-accent/40 transition-all active:scale-95 shrink-0"
+            >
+              <Sparkles className="w-4 h-4 text-accent" />
+              Chords
+            </button>
+
+            {/* Secondary: Generate Melody */}
+            <button
+              onClick={generateMelodyForProgression}
+              disabled={!currentProgression}
+              className="flex items-center justify-center gap-1.5 px-3 lg:px-4 py-2.5 rounded-full border border-border-subtle bg-surface text-foreground font-medium text-sm hover:bg-surface-muted hover:border-accent/40 transition-all active:scale-95 disabled:opacity-40 shrink-0"
+            >
+              <Sparkles className="w-4 h-4 text-accent" />
+              Melody
+            </button>
+
+            {/* Tertiary: Save */}
+            <button
+              onClick={handleSaveProgression}
+              disabled={!currentProgression}
+              className="flex items-center justify-center gap-1.5 w-11 h-11 lg:w-auto lg:px-4 lg:py-2.5 rounded-full border border-border-subtle bg-surface text-muted hover:text-foreground hover:bg-surface-muted transition-all active:scale-95 disabled:opacity-40 shrink-0"
+              title="Save progression"
+            >
+              <Save className="w-4 h-4" />
+              <span className="hidden lg:inline text-sm font-medium">Save</span>
+            </button>
+
+            {/* Tertiary: Audio (mute toggles) */}
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setAudioMenuOpen((v) => !v)}
+                className={`flex items-center justify-center w-11 h-11 rounded-full border transition-all active:scale-95 ${
+                  chordsEnabled && (!melody || melodyEnabled)
+                    ? "border-border-subtle bg-surface text-muted hover:text-foreground hover:bg-surface-muted"
+                    : "border-accent/30 bg-accent/10 text-accent"
+                }`}
+                title="Audio options"
+                aria-expanded={audioMenuOpen}
+              >
+                {chordsEnabled && (!melody || melodyEnabled) ? (
+                  <Volume2 className="w-4 h-4" />
+                ) : (
+                  <VolumeX className="w-4 h-4" />
+                )}
+              </button>
+              {audioMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setAudioMenuOpen(false)} />
+                  <div className="absolute bottom-full right-0 mb-2 z-50 w-44 rounded-2xl border border-border-subtle bg-surface shadow-xl p-1.5 flex flex-col gap-0.5">
+                    <button
+                      onClick={() => setChordsEnabled(!chordsEnabled)}
+                      className="flex items-center justify-between gap-2 w-full px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-surface-muted transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        {chordsEnabled ? <Volume2 className="w-4 h-4 text-muted" /> : <VolumeX className="w-4 h-4 text-accent" />}
+                        Chords
+                      </span>
+                      <span className={`text-[10px] uppercase tracking-wide ${chordsEnabled ? "text-muted/50" : "text-accent"}`}>
+                        {chordsEnabled ? "On" : "Muted"}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setMelodyEnabled(!melodyEnabled)}
+                      disabled={!melody}
+                      className="flex items-center justify-between gap-2 w-full px-3 py-2 rounded-xl text-sm font-medium text-foreground hover:bg-surface-muted transition-colors disabled:opacity-40"
+                    >
+                      <span className="flex items-center gap-2">
+                        {melodyEnabled ? <Volume2 className="w-4 h-4 text-muted" /> : <VolumeX className="w-4 h-4 text-accent" />}
+                        Melody
+                      </span>
+                      <span className={`text-[10px] uppercase tracking-wide ${!melody ? "text-muted/40" : melodyEnabled ? "text-muted/50" : "text-accent"}`}>
+                        {!melody ? "None" : melodyEnabled ? "On" : "Muted"}
+                      </span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+          </div>
+
+          {/* Low-emphasis voicing rating */}
+          {currentProgression && (
+            <VoicingFeedback
+              variant="card"
+              progression={currentProgression}
+              rootKey={rootKey}
+              mode={mode}
+              complexity={complexity}
+              numChords={numChords}
+              bpm={bpm}
+              voicingStyle={voicingStyle}
+              voiceCount={voiceCount}
+            />
+          )}
         </section>
 
       </main>
