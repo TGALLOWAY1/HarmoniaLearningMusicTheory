@@ -478,6 +478,9 @@
   border-bottom: 1px solid var(--border-subtle);
   position: relative;
   transition: background 0.08s;
+  /* Let the browser keep horizontal scrolling of the roll while we own
+     vertical gestures for touch drag-to-move (pitch editing). */
+  touch-action: pan-x;
 }
 
 .note-cell.black-row {
