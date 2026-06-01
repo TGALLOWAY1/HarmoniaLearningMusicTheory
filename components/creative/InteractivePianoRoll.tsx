@@ -449,7 +449,18 @@ export function InteractivePianoRoll({
                             setDraggingMelodyId(mn.id);
                           }
                         }}
-                        className={clsx("melody-overlay-bar", mn.isChordTone && "chord-tone", draggingMelodyId === mn.id && "dragging cursor-grabbing hover:cursor-grabbing")}
+                        className={clsx(
+                          "melody-overlay-bar",
+                          mn.isChordTone && "chord-tone",
+                          // Grabbable only when editable. While ANY note (chord or
+                          // melody) is being dragged, disable pointer-events on every bar
+                          // so the underlying note cells receive the pointerenter that
+                          // moves the dragged note — this keeps chord notes draggable
+                          // straight through rows that a melody bar overlaps.
+                          !onMoveMelodyNote && "pointer-events-none",
+                          onMoveMelodyNote && (isDraggingActive ? "pointer-events-none" : "pointer-events-auto cursor-grab"),
+                          draggingMelodyId === mn.id && "dragging cursor-grabbing hover:cursor-grabbing"
+                        )}
                         style={{
                           left: `${leftPct}%`,
                           width: `${Math.max(widthPct, 2)}%`,

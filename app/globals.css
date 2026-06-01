@@ -538,7 +538,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none;
+  /* Vertical drag edits pitch; keep horizontal roll scrolling. pointer-events
+     is toggled per-bar from the component (auto when grabbable, none mid-drag
+     so the underlying note cells receive the move events). */
+  touch-action: pan-x;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
 }
 .melody-overlay-bar.chord-tone {
