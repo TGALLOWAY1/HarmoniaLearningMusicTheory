@@ -234,15 +234,20 @@ export function InteractivePianoRoll({
     }
   }, [onAddNote, onRemoveNote, onPlayNote]);
 
-  // Drag handling for pitch changes
-  const handleMouseDown = useCallback((midi: number, colIdx: number, hasNote: boolean) => {
+  // Drag handling for pitch changes. Uses pointer events so it works for mouse,
+  // touch and pen. Releasing the implicit pointer capture on pointerdown lets
+  // onPointerEnter fire on neighbouring cells while dragging on touch devices.
+  const handlePointerDown = useCallback((e: React.PointerEvent, midi: number, colIdx: number, hasNote: boolean) => {
     if (hasNote && onMoveNote) {
+      if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
       setIsDragging(true);
       setDragStart({ chordIndex: colIdx, midi });
     }
   }, [onMoveNote]);
 
-  const handleMouseEnterCell = useCallback((midi: number, colIdx: number) => {
+  const handlePointerEnterCell = useCallback((midi: number, colIdx: number) => {
     if (isDragging && dragStart && dragStart.chordIndex === colIdx && dragStart.midi !== midi) {
       onMoveNote?.(colIdx, dragStart.midi, midi);
       setDragStart({ chordIndex: colIdx, midi });
@@ -252,18 +257,23 @@ export function InteractivePianoRoll({
     }
   }, [isDragging, dragStart, onMoveNote, draggingMelodyId, onMoveMelodyNote]);
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback(() => {
     setIsDragging(false);
     setDragStart(null);
     setDraggingMelodyId(null);
   }, []);
 
+  const isDraggingActive = isDragging || draggingMelodyId !== null;
   useEffect(() => {
-    if (isDragging) {
-      window.addEventListener("mouseup", handleMouseUp);
-      return () => window.removeEventListener("mouseup", handleMouseUp);
+    if (isDraggingActive) {
+      window.addEventListener("pointerup", handlePointerUp);
+      window.addEventListener("pointercancel", handlePointerUp);
+      return () => {
+        window.removeEventListener("pointerup", handlePointerUp);
+        window.removeEventListener("pointercancel", handlePointerUp);
+      };
     }
-  }, [isDragging, handleMouseUp]);
+  }, [isDraggingActive, handlePointerUp]);
 
   // Keyboard handlers
   useEffect(() => {
@@ -410,8 +420,8 @@ export function InteractivePianoRoll({
                         data-note={pClass}
                         onClick={() => handleNoteClick(midi, colIdx, hasNote)}
                         onDoubleClick={() => handleDoubleClick(midi, colIdx, hasNote)}
-                        onMouseDown={() => handleMouseDown(midi, colIdx, hasNote)}
-                        onMouseEnter={() => handleMouseEnterCell(midi, colIdx)}
+                        onPointerDown={(e) => handlePointerDown(e, midi, colIdx, hasNote)}
+                        onPointerEnter={() => handlePointerEnterCell(midi, colIdx)}
                       />
                     );
                   })}
@@ -430,13 +440,27 @@ export function InteractivePianoRoll({
                     return (
                       <div
                         key={mn.id}
-                        onMouseDown={(e) => {
+                        onPointerDown={(e) => {
                           e.stopPropagation();
                           if (onMoveMelodyNote) {
+                            if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+                              e.currentTarget.releasePointerCapture(e.pointerId);
+                            }
                             setDraggingMelodyId(mn.id);
                           }
                         }}
-                        className={clsx("melody-overlay-bar", mn.isChordTone && "chord-tone", draggingMelodyId === mn.id && "dragging cursor-grabbing hover:cursor-grabbing")}
+                        className={clsx(
+                          "melody-overlay-bar",
+                          mn.isChordTone && "chord-tone",
+                          // Grabbable only when editable. While ANY note (chord or
+                          // melody) is being dragged, disable pointer-events on every bar
+                          // so the underlying note cells receive the pointerenter that
+                          // moves the dragged note — this keeps chord notes draggable
+                          // straight through rows that a melody bar overlaps.
+                          !onMoveMelodyNote && "pointer-events-none",
+                          onMoveMelodyNote && (isDraggingActive ? "pointer-events-none" : "pointer-events-auto cursor-grab"),
+                          draggingMelodyId === mn.id && "dragging cursor-grabbing hover:cursor-grabbing"
+                        )}
                         style={{
                           left: `${leftPct}%`,
                           width: `${Math.max(widthPct, 2)}%`,
